@@ -4,20 +4,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Entity(name = "subjects")
-public class SubjectModel {
-
+@Entity(name = "lessons")
+public class LessonModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "subjectName cannot be null")
-    @NotBlank(message = "subjectName cannot be blank")
-    private String name;
+    @NotNull(message = "subject cannot be null")
+    @NotBlank(message = "subject cannot be blank")
+    private String subject;
 
     @ManyToOne
     private TeacherModel teacher;
-
-
-
 }
