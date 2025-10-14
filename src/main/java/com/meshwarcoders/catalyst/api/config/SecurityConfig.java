@@ -25,7 +25,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Bean لـ AuthenticationManager علشان تستخدمه في الـ AuthController
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
@@ -45,7 +44,6 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                // نضيف الفلتر اللي هيقرأ JWT قبل فلتر التحقق من اسم المستخدم والباسورد
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
