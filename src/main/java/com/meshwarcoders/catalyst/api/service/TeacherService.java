@@ -25,6 +25,9 @@ public class TeacherService {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private EmailService emailService;
+
     @Transactional
     public AuthResponse signUp(SignUpRequest request) {
         // Check if email already exists
@@ -69,16 +72,16 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("No account found with this email!"));
 
         // Generate reset token
-        String resetToken = UUID.randomUUID().toString();
-        teacher.setResetPasswordToken(resetToken);
+        String resetCode = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+
+        teacher.setResetPasswordToken(resetCode);
         teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusHours(24));
+
+        emailService.sendEmail(teacher.getEmail(),"Password Reset Code","Your reset code is: " + resetCode);
 
         teacherRepository.save(teacher);
 
-        // في الواقع، يجب إرسال الـ token عبر البريد الإلكتروني
-        // لكن هنا سنعيده في الـ response للتجربة
-        System.out.println("Reset password token: " + resetToken);
-        // sendEmailWithResetToken(teacher.getEmail(), resetToken);
+
     }
 
     @Transactional
