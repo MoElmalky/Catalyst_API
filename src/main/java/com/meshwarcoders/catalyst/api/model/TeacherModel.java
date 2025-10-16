@@ -1,7 +1,10 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity(name = "teachers")
 public class TeacherModel {
@@ -26,6 +29,10 @@ public class TeacherModel {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "teacher")
+    private List<LessonModel> lessons = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

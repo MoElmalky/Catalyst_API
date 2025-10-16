@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/api/teachers/signup",
                                 "/api/teachers/login",
                                 "/api/teachers/forgot-password",
+                                "/api/teachers/verify-rest-code",
                                 "/api/teachers/reset-password"
                         ).permitAll()
                         .anyRequest().authenticated()
