@@ -65,6 +65,18 @@ public class TeacherController {
         }
     }
 
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<ApiResponse> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request){
+        try {
+            String data = teacherService.verifyResetCode(request);
+            ApiResponse response = new ApiResponse(true, "Code verified successfully!", data);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            ApiResponse response = new ApiResponse(false, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
     // ================== RESET PASSWORD ==================
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {

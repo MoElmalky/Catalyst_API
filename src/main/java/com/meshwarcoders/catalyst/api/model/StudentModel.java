@@ -1,13 +1,14 @@
 package com.meshwarcoders.catalyst.api.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity(name = "students")
 public class StudentModel {
@@ -16,18 +17,19 @@ public class StudentModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "fullName cannot be null")
-    @NotBlank(message = "fullName cannot be blank")
     private String fullName;
 
-    @NotNull(message = "email cannot be null")
-    @NotBlank(message = "email cannot be blank")
-    @Email(message = "invalid email format")
+    @Column(unique = true)
     private String email;
 
-    @NotNull(message = "password cannot be null")
-    @NotBlank(message = "password cannot be blank")
-    @Size(min = 6, max =20, message = "password must be between 6-20 characters")
     private String password;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "student")
+    private List<StudentLessonModel> studentLessons = new ArrayList<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "student")
+    private List<StudentExamModel> studentExams = new ArrayList<>();
 
 }

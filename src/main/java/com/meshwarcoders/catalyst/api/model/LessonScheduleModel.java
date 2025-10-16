@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity(name = "lesson_schedules")
@@ -16,11 +17,7 @@ public class LessonScheduleModel {
     @ManyToOne
     private LessonModel lesson;
 
-    @NotNull(message = "day cannot be null")
-    @NotBlank(message = "day cannot be blank")
-    private String day;
-
-    private LocalTime startTime;
+    private LocalDateTime startTime;
 
     private Integer duration;
 }

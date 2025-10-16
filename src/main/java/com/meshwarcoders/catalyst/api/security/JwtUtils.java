@@ -10,7 +10,7 @@ import java.util.Date;
 @Component
 public class JwtUtils {
     
-    @Value("${app.jwt.secret:mySecretKeyForJWTTokenGenerationAndValidation12345678}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
 
     @Value("${app.jwt.expiration:86400000}") // 24 hours
@@ -50,6 +50,33 @@ public class JwtUtils {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
+        }
+    }
+    public String generateResetToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "password_reset")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 5 * 60 * 1000)) // 5 minutes
+                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String validateResetToken(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            if (!"password_reset".equals(claims.get("type"))) {
+                return null;
+            }
+
+            return claims.getSubject();
+        } catch (JwtException e) {
+            return null; // invalid or expired token
         }
     }
 }
