@@ -65,7 +65,7 @@ public class TeacherController {
         }
     }
 
-    @PostMapping("/verify-rest-code")
+    @PostMapping("/verify-reset-code")
     public ResponseEntity<ApiResponse> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request){
         try {
             String data = teacherService.verifyResetCode(request);

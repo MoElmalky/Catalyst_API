@@ -52,11 +52,11 @@ public class TeacherService {
     public AuthResponse login(LoginRequest request) {
         // Find teacher by email
         TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password!"));
+                .orElseThrow(() -> new RuntimeException("Invalid email!"));
 
         // Check password
         if (!passwordEncoder.matches(request.getPassword(), teacher.getPassword())) {
-            throw new RuntimeException("Invalid email or password!");
+            throw new RuntimeException("Invalid password!");
         }
 
         // Generate JWT token
@@ -89,7 +89,7 @@ public class TeacherService {
         TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("No account found with this email!"));
 
-        if(teacher.getResetPasswordToken().equals(request.getCode())){
+        if(!teacher.getResetPasswordToken().equals(request.getCode())){
             throw new RuntimeException("Invalid reset token!");
         }
 
