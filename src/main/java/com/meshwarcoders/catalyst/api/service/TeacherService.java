@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,11 +53,11 @@ public class TeacherService {
     public AuthResponse login(LoginRequest request) {
         // Find teacher by email
         TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password!"));
+                .orElseThrow(() -> new RuntimeException("Invalid email!"));
 
         // Check password
         if (!passwordEncoder.matches(request.getPassword(), teacher.getPassword())) {
-            throw new RuntimeException("Invalid email or password!");
+            throw new RuntimeException("Invalid password!");
         }
 
         // Generate JWT token
@@ -66,7 +67,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) throws IOException {
         // Find teacher by email
         TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("No account found with this email!"));
@@ -75,27 +76,42 @@ public class TeacherService {
         String resetCode = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
 
         teacher.setResetPasswordToken(resetCode);
-        teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusHours(24));
+        teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(5));
 
-        emailService.sendEmail(teacher.getEmail(),"Password Reset Code","Your reset code is: " + resetCode);
+        emailService.sendEmail(teacher.getEmail(),resetCode);
 
         teacherRepository.save(teacher);
 
 
     }
 
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        // Find teacher by reset token
-        TeacherModel teacher = teacherRepository.findAll().stream()
-                .filter(t -> request.getToken().equals(t.getResetPasswordToken()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Invalid reset token!"));
+    @Transactional(readOnly = true)
+    public String verifyResetCode(VerifyResetCodeRequest request){
+        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("No account found with this email!"));
 
-        // Check if token is expired
-        if (teacher.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+        if(!teacher.getResetPasswordToken().equals(request.getCode())){
+            throw new RuntimeException("Invalid reset token!");
+        }
+
+        if(teacher.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())){
             throw new RuntimeException("Reset token has expired!");
         }
+
+        return jwtUtils.generateResetToken(request.getEmail());
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+
+        String email = jwtUtils.validateResetToken(request.getResetToken());
+
+        if (email == null) {
+            throw new RuntimeException("Invalid reset token!");
+        }
+
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No account found!"));
 
         // Update password
         teacher.setPassword(passwordEncoder.encode(request.getNewPassword()));
