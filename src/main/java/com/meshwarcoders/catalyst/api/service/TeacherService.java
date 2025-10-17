@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,7 +67,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) throws IOException {
         // Find teacher by email
         TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("No account found with this email!"));
@@ -77,7 +78,7 @@ public class TeacherService {
         teacher.setResetPasswordToken(resetCode);
         teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(5));
 
-        emailService.sendEmail(teacher.getEmail(),"Password Reset Code","Your reset code is: " + resetCode + "\nExpires after 5 minutes!");
+        emailService.sendEmail(teacher.getEmail(),resetCode);
 
         teacherRepository.save(teacher);
 
