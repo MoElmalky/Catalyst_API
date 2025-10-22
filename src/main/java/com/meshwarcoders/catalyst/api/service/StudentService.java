@@ -62,7 +62,8 @@ public class StudentService {
         student = studentRepository.save(student);
 
         // Generate JWT token
-        String token = jwtUtils.generateToken(student.getEmail());
+        String token = jwtUtils.generateToken(student.getEmail(), "STUDENT");
+
 
         return new StudentAuthResponse(
                 token,
@@ -87,7 +88,7 @@ public class StudentService {
         }
 
         // Generate JWT token
-        String token = jwtUtils.generateToken(student.getEmail());
+        String token = jwtUtils.generateToken(student.getEmail(), "STUDENT");
 
         return new StudentAuthResponse(
                 token,
