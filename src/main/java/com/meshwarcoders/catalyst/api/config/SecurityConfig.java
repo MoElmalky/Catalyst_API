@@ -37,11 +37,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                // Teacher endpoints
                                 "/api/teachers/signup",
                                 "/api/teachers/login",
                                 "/api/teachers/forgot-password",
                                 "/api/teachers/verify-reset-code",
-                                "/api/teachers/reset-password"
+                                "/api/teachers/reset-password",
+                                // Student endpoints
+                                "/api/students/signup",
+                                "/api/students/login",
+                                "/api/students/forgot-password",
+                                "/api/students/verify-reset-code",
+                                "/api/students/reset-password"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
