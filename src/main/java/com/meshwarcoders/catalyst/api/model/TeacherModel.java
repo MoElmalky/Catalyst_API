@@ -30,6 +30,8 @@ public class TeacherModel {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    private String role = "TEACHER";
+
     @JsonIgnore
     @OneToMany(mappedBy = "teacher")
     private List<LessonModel> lessons = new ArrayList<>();
@@ -45,60 +47,28 @@ public class TeacherModel {
         updatedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    // ===== Getters & Setters =====
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
-    public String getFullName() {
-        return fullName;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getResetPasswordToken() { return resetPasswordToken; }
+    public void setResetPasswordToken(String resetPasswordToken) { this.resetPasswordToken = resetPasswordToken; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public LocalDateTime getResetPasswordTokenExpiry() { return resetPasswordTokenExpiry; }
+    public void setResetPasswordTokenExpiry(LocalDateTime resetPasswordTokenExpiry) { this.resetPasswordTokenExpiry = resetPasswordTokenExpiry; }
 
-    public String getPassword() {
-        return password;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getResetPasswordToken() {
-        return resetPasswordToken;
-    }
-
-    public void setResetPasswordToken(String resetPasswordToken) {
-        this.resetPasswordToken = resetPasswordToken;
-    }
-
-    public LocalDateTime getResetPasswordTokenExpiry() {
-        return resetPasswordTokenExpiry;
-    }
-
-    public void setResetPasswordTokenExpiry(LocalDateTime resetPasswordTokenExpiry) {
-        this.resetPasswordTokenExpiry = resetPasswordTokenExpiry;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

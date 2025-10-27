@@ -27,6 +27,9 @@ public class ClassRequestService {
     @Autowired
     private StudentRepository studentRepository;
 
+    @Autowired
+    private TeacherRepository teacherRepository; // ✅ NEW
+
     // ================== STUDENT: REQUEST TO JOIN CLASS ==================
     @Transactional
     public ClassRequestResponse requestToJoinClass(Long studentId, JoinClassRequest request) {
@@ -178,5 +181,20 @@ public class ClassRequestService {
         return enrollments.stream()
                 .map(StudentLessonModel::getStudent)
                 .collect(Collectors.toList());
+    }
+
+    // ================== EXTRA: GET ID BY EMAIL ==================
+    @Transactional(readOnly = true)
+    public Long getStudentIdByEmail(String email) {   // ✅ NEW
+        StudentModel student = studentRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Student not found!"));
+        return student.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public Long getTeacherIdByEmail(String email) {   // ✅ NEW
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Teacher not found!"));
+        return teacher.getId();
     }
 }
