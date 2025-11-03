@@ -45,7 +45,8 @@ public class TeacherService {
         teacher = teacherRepository.save(teacher);
 
         // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
+        String token = jwtUtils.generateToken(teacher.getEmail(), "TEACHER");
+
 
         return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
     }
@@ -61,7 +62,7 @@ public class TeacherService {
         }
 
         // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
+        String token = jwtUtils.generateToken(teacher.getEmail(), "TEACHER");
 
         return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
     }

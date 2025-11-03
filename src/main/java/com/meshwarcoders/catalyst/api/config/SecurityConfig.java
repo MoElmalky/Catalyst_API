@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -36,13 +38,34 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ===== Public endpoints =====
                         .requestMatchers(
                                 "/api/teachers/signup",
                                 "/api/teachers/login",
                                 "/api/teachers/forgot-password",
                                 "/api/teachers/verify-reset-code",
-                                "/api/teachers/reset-password"
+                                "/api/teachers/reset-password",
+                                "/api/teachers/all",
+                                "/api/teachers/{id}",
+                                
+                                "/api/students/signup",
+                                "/api/students/login",
+                                "/api/students/forgot-password",
+                                "/api/students/verify-reset-code",
+                                "/api/students/reset-password",
+                                "/api/students/all",
+                                "/api/students/{id}"
                         ).permitAll()
+
+                        // ===== Student endpoints =====
+                        .requestMatchers("/api/class-requests/**").hasAnyRole("STUDENT", "TEACHER")
+                        .requestMatchers("/api/students/profile").hasRole("STUDENT")
+
+                        // ===== Teacher endpoints =====
+                        .requestMatchers("/api/lessons/**").hasRole("TEACHER")
+                        .requestMatchers("/api/teachers/profile").hasRole("TEACHER")
+
+                        // ===== Any other request =====
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
