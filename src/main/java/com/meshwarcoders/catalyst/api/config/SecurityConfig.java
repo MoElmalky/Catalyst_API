@@ -38,34 +38,73 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ===== Public endpoints =====
+                        // ========== PUBLIC ENDPOINTS (بدون Token) ==========
+                        
+                        // Teacher Auth (Public)
                         .requestMatchers(
                                 "/api/teachers/signup",
                                 "/api/teachers/login",
                                 "/api/teachers/forgot-password",
                                 "/api/teachers/verify-reset-code",
-                                "/api/teachers/reset-password",
+                                "/api/teachers/reset-password"
+                        ).permitAll()
+                        
+                        // Teacher Public Info
+                        .requestMatchers(
                                 "/api/teachers/all",
-                                "/api/teachers/{id}",
-                                
+                                "/api/teachers/{id}"
+                        ).permitAll()
+                        
+                        // Student Auth (Public)
+                        .requestMatchers(
                                 "/api/students/signup",
                                 "/api/students/login",
                                 "/api/students/forgot-password",
                                 "/api/students/verify-reset-code",
-                                "/api/students/reset-password",
+                                "/api/students/reset-password"
+                        ).permitAll()
+                        
+                        // Student Public Info
+                        .requestMatchers(
                                 "/api/students/all",
                                 "/api/students/{id}"
                         ).permitAll()
+                        
+                        // Lessons (Public - للطلاب يقدروا يشوفوا الكورسات المتاحة)
+                        .requestMatchers(
+                                "/api/lessons/all",
+                                "/api/lessons/teacher/{teacherId}",
+                                "/api/lessons/{id}"
+                        ).permitAll()
+                        
+                        // Home Dashboard (Public)
+                        .requestMatchers(
+                                "/api/home/dashboard"
+                        ).permitAll()
 
-                        // ===== Student endpoints =====
-                        .requestMatchers("/api/class-requests/**").hasAnyRole("STUDENT", "TEACHER")
-                        .requestMatchers("/api/students/profile").hasRole("STUDENT")
+                        // ========== STUDENT ENDPOINTS (محتاج Student Token) ==========
+                        .requestMatchers(
+                                "/api/students/profile",
+                                "/api/class-requests/join",
+                                "/api/class-requests/my-requests"
+                        ).hasRole("STUDENT")
 
-                        // ===== Teacher endpoints =====
-                        .requestMatchers("/api/lessons/**").hasRole("TEACHER")
-                        .requestMatchers("/api/teachers/profile").hasRole("TEACHER")
+                        // ========== TEACHER ENDPOINTS (محتاج Teacher Token) ==========
+                        .requestMatchers(
+                                "/api/teachers/profile",
+                                "/api/lessons/my-lessons",
+                                "/api/lessons/create",
+                                "/api/lessons/{id}",  // PUT and DELETE
+                                "/api/class-requests/pending",
+                                "/api/class-requests/approve/{requestId}",
+                                "/api/class-requests/reject/{requestId}",
+                                "/api/class-requests/remove-student/{lessonId}/{studentId}",
+                                "/api/class-requests/students/{lessonId}",
+                                "/api/student-management/remove-from-all-classes/{studentId}",
+                                "/api/student-management/student-enrollment/{studentId}"
+                        ).hasRole("TEACHER")
 
-                        // ===== Any other request =====
+                        // ========== ANY OTHER REQUEST ==========
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
