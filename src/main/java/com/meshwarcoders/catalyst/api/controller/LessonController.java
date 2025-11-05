@@ -1,11 +1,13 @@
 package com.meshwarcoders.catalyst.api.controller;
 
 import com.meshwarcoders.catalyst.api.dto.ApiResponse;
+import com.meshwarcoders.catalyst.api.dto.LessonResponseDTO;
 import com.meshwarcoders.catalyst.api.model.LessonModel;
 import com.meshwarcoders.catalyst.api.model.TeacherModel;
 import com.meshwarcoders.catalyst.api.repository.LessonRepository;
 import com.meshwarcoders.catalyst.api.repository.TeacherRepository;
 import com.meshwarcoders.catalyst.api.security.JwtUtils;
+import com.meshwarcoders.catalyst.api.service.LessonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,9 @@ public class LessonController {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private LessonService lessonService;
 
     // ================== CREATE LESSON ==================
     @PostMapping("/create")
@@ -59,7 +64,7 @@ public class LessonController {
             TeacherModel teacher = teacherRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-            List<LessonModel> lessons = lessonRepository.findByTeacherId(teacher.getId());
+            List<LessonResponseDTO> lessons = lessonService.getLessonsByTeacherId(teacher.getId());
 
             return ResponseEntity.ok(
                     new ApiResponse(true, "Lessons fetched successfully!", lessons));
@@ -76,7 +81,7 @@ public class LessonController {
             TeacherModel teacher = teacherRepository.findById(teacherId)
                     .orElseThrow(() -> new RuntimeException("Teacher not found!"));
 
-            List<LessonModel> lessons = lessonRepository.findByTeacherId(teacherId);
+            List<LessonResponseDTO> lessons = lessonService.getLessonsByTeacherId(teacherId);
 
             return ResponseEntity.ok(
                     new ApiResponse(true, "Lessons fetched successfully!", lessons));
@@ -90,7 +95,7 @@ public class LessonController {
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAllLessons() {
         try {
-            List<LessonModel> lessons = lessonRepository.findAll();
+            List<LessonResponseDTO> lessons = lessonService.getAllLessons();
             return ResponseEntity.ok(
                     new ApiResponse(true, "All lessons fetched successfully!", lessons));
         } catch (Exception e) {
@@ -103,9 +108,7 @@ public class LessonController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getLessonById(@PathVariable Long id) {
         try {
-            LessonModel lesson = lessonRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Lesson not found!"));
-
+            LessonResponseDTO lesson = lessonService.getLessonById(id);
             return ResponseEntity.ok(
                     new ApiResponse(true, "Lesson fetched successfully!", lesson));
         } catch (Exception e) {
@@ -115,7 +118,7 @@ public class LessonController {
     }
 
     // ================== UPDATE LESSON ==================
-    @PostMapping("update/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse> updateLesson(
             @PathVariable Long id,
             @RequestBody LessonModel lessonRequest) {
@@ -146,7 +149,7 @@ public class LessonController {
     }
 
     // ================== DELETE LESSON ==================
-    @DeleteMapping("delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse> deleteLesson(@PathVariable Long id) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
