@@ -1,6 +1,7 @@
 package com.meshwarcoders.catalyst.api.controller;
 
 import com.meshwarcoders.catalyst.api.dto.ApiResponse;
+import com.meshwarcoders.catalyst.api.dto.CreateLessonRequest;
 import com.meshwarcoders.catalyst.api.dto.LessonResponseDTO;
 import com.meshwarcoders.catalyst.api.model.LessonModel;
 import com.meshwarcoders.catalyst.api.model.TeacherModel;
@@ -8,6 +9,7 @@ import com.meshwarcoders.catalyst.api.repository.LessonRepository;
 import com.meshwarcoders.catalyst.api.repository.TeacherRepository;
 import com.meshwarcoders.catalyst.api.security.JwtUtils;
 import com.meshwarcoders.catalyst.api.service.LessonService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +38,8 @@ public class LessonController {
 
     // ================== CREATE LESSON ==================
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse> createLesson(@RequestBody LessonModel lesson) {
+    public ResponseEntity<ApiResponse> createLesson(
+            @Valid @RequestBody CreateLessonRequest request) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = (String) auth.getPrincipal();
@@ -44,8 +47,7 @@ public class LessonController {
             TeacherModel teacher = teacherRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-            lesson.setTeacher(teacher);
-            LessonModel saved = lessonRepository.save(lesson);
+            LessonResponseDTO saved = lessonService.createLesson(teacher, request);
 
             return ResponseEntity.ok(new ApiResponse(true, "Lesson created successfully!", saved));
         } catch (Exception e) {
@@ -121,7 +123,7 @@ public class LessonController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse> updateLesson(
             @PathVariable Long id,
-            @RequestBody LessonModel lessonRequest) {
+            @Valid @RequestBody CreateLessonRequest request) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String email = (String) auth.getPrincipal();
@@ -137,8 +139,7 @@ public class LessonController {
                 throw new RuntimeException("You are not authorized to update this lesson!");
             }
 
-            lesson.setSubject(lessonRequest.getSubject());
-            LessonModel updated = lessonRepository.save(lesson);
+            LessonResponseDTO updated = lessonService.updateLesson(id, request);
 
             return ResponseEntity.ok(
                     new ApiResponse(true, "Lesson updated successfully!", updated));
