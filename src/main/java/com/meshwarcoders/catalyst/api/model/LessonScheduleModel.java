@@ -1,11 +1,8 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Entity(name = "lesson_schedules")
 public class LessonScheduleModel {
@@ -14,10 +11,45 @@ public class LessonScheduleModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "lesson_id")
     private LessonModel lesson;
 
     private LocalDateTime startTime;
 
-    private Integer duration;
+    private Integer duration; // in minutes
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public LessonModel getLesson() {
+        return lesson;
+    }
+
+    public void setLesson(LessonModel lesson) {
+        this.lesson = lesson;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
 }
