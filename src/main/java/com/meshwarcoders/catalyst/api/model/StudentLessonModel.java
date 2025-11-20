@@ -14,4 +14,8 @@ public class StudentLessonModel {
     @ManyToOne(optional = false)
     private StudentModel student;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EnrollmentStatus status = EnrollmentStatus.PENDING;
+
 }

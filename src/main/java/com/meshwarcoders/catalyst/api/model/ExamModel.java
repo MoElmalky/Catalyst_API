@@ -3,6 +3,7 @@ package com.meshwarcoders.catalyst.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,15 @@ public class ExamModel {
 
     private Integer maxGrade;
 
+    private LocalDateTime examDateTime;
+
+    private Integer durationMinutes;
+
     @JsonIgnore
     @OneToMany(mappedBy = "exam")
     private List<StudentExamModel> studentExams = new ArrayList<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "exam")
+    private List<ExamQuestionModel> questions = new ArrayList<>();
 }

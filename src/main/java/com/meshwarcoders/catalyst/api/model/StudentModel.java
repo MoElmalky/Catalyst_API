@@ -1,17 +1,14 @@
 package com.meshwarcoders.catalyst.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.meshwarcoders.catalyst.api.model.common.EmailableUser;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "students")
-public class StudentModel {
+public class StudentModel implements EmailableUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +19,10 @@ public class StudentModel {
     @Column(unique = true)
     private String email;
 
+    @JsonIgnore
     private String password;
+
+    private boolean emailConfirmed;
 
     @JsonIgnore
     @OneToMany(mappedBy = "student")
@@ -32,4 +32,18 @@ public class StudentModel {
     @OneToMany(mappedBy = "student")
     private List<StudentExamModel> studentExams = new ArrayList<>();
 
+    @Override
+    public String getEmail() {
+        return email;
+    }
+
+    @Override
+    public boolean isEmailConfirmed() {
+        return emailConfirmed;
+    }
+
+    @Override
+    public void setEmailConfirmed(boolean confirmed) {
+        this.emailConfirmed = confirmed;
+    }
 }
