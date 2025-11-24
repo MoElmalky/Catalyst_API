@@ -28,6 +28,7 @@ public class TeacherModel implements EmailableUser {
     @JsonIgnore
     private LocalDateTime resetPasswordTokenExpiry;
 
+    @Column
     private boolean emailConfirmed;
 
     @Column(name = "created_at")
@@ -72,12 +73,10 @@ public class TeacherModel implements EmailableUser {
         return email;
     }
 
-    @Override
     public boolean isEmailConfirmed() {
         return emailConfirmed;
     }
 
-    @Override
     public void setEmailConfirmed(boolean confirmed) {
         this.emailConfirmed = confirmed;
     }

@@ -1,5 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.dto.AuthResponse;
 import jakarta.persistence.*;
 
 @Entity(name = "student_lessons")
@@ -18,4 +19,27 @@ public class StudentLessonModel {
     @Column(nullable = false)
     private EnrollmentStatus status = EnrollmentStatus.PENDING;
 
+    public Long getId() {
+        return id;
+    }
+
+    public StudentModel getStudent() {
+        return student;
+    }
+
+    public EnrollmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EnrollmentStatus status) {
+        this.status = status;
+    }
+
+    public void setLesson(LessonModel lesson) {
+        this.lesson = lesson;
+    }
+
+    public void setStudent(StudentModel student) {
+        this.student = student;
+    }
 }

@@ -32,4 +32,16 @@ public class LessonModel {
     @JsonIgnore
     @OneToMany(mappedBy = "lesson")
     private List<ExamModel> exams = new ArrayList<>();
+
+    public Long getId() {
+        return id;
+    }
+
+    public TeacherModel getTeacher() {
+        return teacher;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
 }

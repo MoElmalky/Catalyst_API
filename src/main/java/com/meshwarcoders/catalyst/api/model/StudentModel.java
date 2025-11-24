@@ -32,6 +32,22 @@ public class StudentModel implements EmailableUser {
     @OneToMany(mappedBy = "student")
     private List<StudentExamModel> studentExams = new ArrayList<>();
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     @Override
     public String getEmail() {
         return email;
@@ -45,5 +61,17 @@ public class StudentModel implements EmailableUser {
     @Override
     public void setEmailConfirmed(boolean confirmed) {
         this.emailConfirmed = confirmed;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
