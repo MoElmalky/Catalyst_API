@@ -1,5 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.model.common.QuestionType;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;

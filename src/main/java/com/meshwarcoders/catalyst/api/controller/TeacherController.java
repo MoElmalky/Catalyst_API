@@ -6,6 +6,7 @@ import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.TeacherModel;
 import com.meshwarcoders.catalyst.api.repository.TeacherRepository;
 import com.meshwarcoders.catalyst.api.service.ExamService;
+import com.meshwarcoders.catalyst.api.service.LessonService;
 import com.meshwarcoders.catalyst.api.service.TeacherService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class TeacherController {
 
     @Autowired
     private ExamService examService;
+
+    @Autowired
+    private LessonService lessonService;
 
     @Autowired
     private TeacherRepository teacherRepository;
@@ -233,6 +237,23 @@ public class TeacherController {
         var exams = examService.getExamsForLessonAsTeacher(teacher.getId(), lessonId);
         return ResponseEntity.ok(new ApiResponse(true,
                 "Exams fetched successfully!", exams));
+    }
+
+    @PostMapping("/lessons")
+    public ResponseEntity<ApiResponse> createLesson(@Valid @RequestBody CreateLessonRequest request,
+                                                    Authentication authentication){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Missing or invalid token!");
+        }
+
+        String email = authentication.getName();
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+        LessonDto data = lessonService.createLesson(teacher.getId(),request);
+
+        return ResponseEntity.ok(new ApiResponse(true,"Lesson created successfully!",data));
+
     }
 
 }

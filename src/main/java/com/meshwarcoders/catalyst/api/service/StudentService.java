@@ -5,6 +5,7 @@ import com.meshwarcoders.catalyst.api.exception.BadRequestException;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import com.meshwarcoders.catalyst.api.model.common.UserType;
 import com.meshwarcoders.catalyst.api.repository.EmailConfirmRepository;
 import com.meshwarcoders.catalyst.api.repository.LessonRepository;

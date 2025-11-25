@@ -41,7 +41,19 @@ public class LessonModel {
         return teacher;
     }
 
+    public List<LessonScheduleModel> getLessonSchedules() {
+        return lessonSchedules;
+    }
+
     public String getSubject() {
         return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public void setTeacher(TeacherModel teacher) {
+        this.teacher = teacher;
     }
 }

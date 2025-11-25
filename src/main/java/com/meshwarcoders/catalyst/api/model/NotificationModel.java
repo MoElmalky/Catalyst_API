@@ -1,5 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.model.common.NotificationType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

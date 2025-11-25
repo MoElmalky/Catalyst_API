@@ -1,6 +1,6 @@
 package com.meshwarcoders.catalyst.api.dto;
 
-import com.meshwarcoders.catalyst.api.model.NotificationType;
+import com.meshwarcoders.catalyst.api.model.common.NotificationType;
 
 import java.time.LocalDateTime;
 import java.util.Map;

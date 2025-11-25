@@ -1,6 +1,6 @@
 package com.meshwarcoders.catalyst.api.dto;
 
-import com.meshwarcoders.catalyst.api.model.EnrollmentStatus;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 
 public class JoinRequestDto {
     private Long id;

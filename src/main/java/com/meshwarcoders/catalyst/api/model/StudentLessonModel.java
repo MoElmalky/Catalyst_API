@@ -1,6 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
-import com.meshwarcoders.catalyst.api.dto.AuthResponse;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import jakarta.persistence.*;
 
 @Entity(name = "student_lessons")

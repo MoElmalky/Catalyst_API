@@ -1,8 +1,7 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.model.common.WeekDay;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -17,7 +16,37 @@ public class LessonScheduleModel {
     @ManyToOne
     private LessonModel lesson;
 
-    private LocalDateTime startTime;
+    private LocalTime startTime;
+
+    private WeekDay day;
 
     private Integer duration;
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public WeekDay getDay() {
+        return day;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setLesson(LessonModel lesson) {
+        this.lesson = lesson;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
+
+    public void setDay(WeekDay day) {
+        this.day = day;
+    }
 }

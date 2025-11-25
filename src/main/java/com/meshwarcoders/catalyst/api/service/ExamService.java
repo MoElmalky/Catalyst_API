@@ -6,6 +6,8 @@ import com.meshwarcoders.catalyst.api.dto.ExamSummaryDto;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
+import com.meshwarcoders.catalyst.api.model.common.NotificationType;
 import com.meshwarcoders.catalyst.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

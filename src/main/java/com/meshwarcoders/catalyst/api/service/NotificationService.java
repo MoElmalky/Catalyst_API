@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshwarcoders.catalyst.api.dto.NotificationDto;
 import com.meshwarcoders.catalyst.api.model.NotificationModel;
-import com.meshwarcoders.catalyst.api.model.NotificationType;
+import com.meshwarcoders.catalyst.api.model.common.NotificationType;
 import com.meshwarcoders.catalyst.api.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

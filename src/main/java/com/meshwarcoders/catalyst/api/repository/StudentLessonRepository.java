@@ -1,6 +1,7 @@
 package com.meshwarcoders.catalyst.api.repository;
 
 import com.meshwarcoders.catalyst.api.model.*;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
