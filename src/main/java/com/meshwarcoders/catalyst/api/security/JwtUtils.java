@@ -11,6 +11,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtils {
@@ -45,11 +47,16 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String email) {
+    // 🔹 توليد التوكن مع الدور
+    public String generateToken(String email, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
@@ -57,6 +64,7 @@ public class JwtUtils {
                 .compact();
     }
 
+    // 🔹 استخراج الإيميل
     public String getEmailFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -64,6 +72,16 @@ public class JwtUtils {
                 .parseClaimsJws(token)
                 .getBody();
         return claims.getSubject();
+    }
+
+    // 🔹 استخراج الدور
+    public String getRoleFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("role", String.class);
     }
 
     public boolean validateToken(String token) {
@@ -77,6 +95,8 @@ public class JwtUtils {
             return false;
         }
     }
+
+    // باقي الأكواد (Reset token) زي ما هي...
     public String generateResetToken(String email) {
         return Jwts.builder()
                 .setSubject(email)

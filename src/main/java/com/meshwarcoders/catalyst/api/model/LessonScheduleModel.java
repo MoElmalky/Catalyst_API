@@ -4,7 +4,6 @@ import com.meshwarcoders.catalyst.api.model.common.WeekDay;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Entity(name = "lesson_schedules")
 public class LessonScheduleModel {
@@ -13,7 +12,9 @@ public class LessonScheduleModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "lesson_id")
     private LessonModel lesson;
 
     private LocalTime startTime;
