@@ -1,5 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import jakarta.persistence.*;
 
 @Entity(name = "student_lessons")
@@ -14,25 +15,28 @@ public class StudentLessonModel {
     @ManyToOne(optional = false)
     private StudentModel student;
 
-    // Getters and Setters
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EnrollmentStatus status = EnrollmentStatus.PENDING;
+
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public StudentModel getStudent() {
+        return student;
     }
 
-    public LessonModel getLesson() {
-        return lesson;
+    public EnrollmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EnrollmentStatus status) {
+        this.status = status;
     }
 
     public void setLesson(LessonModel lesson) {
         this.lesson = lesson;
-    }
-
-    public StudentModel getStudent() {
-        return student;
     }
 
     public void setStudent(StudentModel student) {

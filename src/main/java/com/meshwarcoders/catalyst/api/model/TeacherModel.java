@@ -1,13 +1,14 @@
 package com.meshwarcoders.catalyst.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.meshwarcoders.catalyst.api.model.common.EmailableUser;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "teachers")
-public class TeacherModel {
+public class TeacherModel implements EmailableUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,11 +19,17 @@ public class TeacherModel {
     @Column(unique = true)
     private String email;
 
+    @JsonIgnore
     private String password;
 
+    @JsonIgnore
     private String resetPasswordToken;
 
+    @JsonIgnore
     private LocalDateTime resetPasswordTokenExpiry;
+
+    @Column
+    private boolean emailConfirmed;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -63,8 +70,17 @@ public class TeacherModel {
     public String getResetPasswordToken() { return resetPasswordToken; }
     public void setResetPasswordToken(String resetPasswordToken) { this.resetPasswordToken = resetPasswordToken; }
 
-    public LocalDateTime getResetPasswordTokenExpiry() { return resetPasswordTokenExpiry; }
-    public void setResetPasswordTokenExpiry(LocalDateTime resetPasswordTokenExpiry) { this.resetPasswordTokenExpiry = resetPasswordTokenExpiry; }
+    public boolean isEmailConfirmed() {
+        return emailConfirmed;
+    }
+
+    public void setEmailConfirmed(boolean confirmed) {
+        this.emailConfirmed = confirmed;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

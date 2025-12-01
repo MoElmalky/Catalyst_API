@@ -35,13 +35,16 @@ public class LessonModel {
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExamModel> exams = new ArrayList<>();
 
-    // ===== Getters & Setters =====
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public TeacherModel getTeacher() {
+        return teacher;
+    }
+
+    public List<LessonScheduleModel> getLessonSchedules() {
+        return lessonSchedules;
     }
 
     public String getSubject() {
@@ -52,35 +55,7 @@ public class LessonModel {
         this.subject = subject;
     }
 
-    public TeacherModel getTeacher() {
-        return teacher;
-    }
-
     public void setTeacher(TeacherModel teacher) {
         this.teacher = teacher;
-    }
-
-    public List<StudentLessonModel> getStudentLessons() {
-        return studentLessons;
-    }
-
-    public void setStudentLessons(List<StudentLessonModel> studentLessons) {
-        this.studentLessons = studentLessons;
-    }
-
-    public List<LessonScheduleModel> getLessonSchedules() {
-        return lessonSchedules;
-    }
-
-    public void setLessonSchedules(List<LessonScheduleModel> lessonSchedules) {
-        this.lessonSchedules = lessonSchedules;
-    }
-
-    public List<ExamModel> getExams() {
-        return exams;
-    }
-
-    public void setExams(List<ExamModel> exams) {
-        this.exams = exams;
     }
 }

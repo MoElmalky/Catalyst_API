@@ -1,17 +1,30 @@
 package com.meshwarcoders.catalyst.api.service;
 
 import com.meshwarcoders.catalyst.api.dto.*;
-import com.meshwarcoders.catalyst.api.model.StudentModel;
+import com.meshwarcoders.catalyst.api.exception.BadRequestException;
+import com.meshwarcoders.catalyst.api.exception.NotFoundException;
+import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
+import com.meshwarcoders.catalyst.api.model.*;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
+import com.meshwarcoders.catalyst.api.model.common.UserType;
+import com.meshwarcoders.catalyst.api.repository.EmailConfirmRepository;
+import com.meshwarcoders.catalyst.api.repository.LessonRepository;
+import com.meshwarcoders.catalyst.api.repository.StudentLessonRepository;
 import com.meshwarcoders.catalyst.api.repository.StudentRepository;
 import com.meshwarcoders.catalyst.api.security.JwtUtils;
+import com.meshwarcoders.catalyst.util.EmailTemplates;
+import com.sendgrid.helpers.mail.objects.Content;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class StudentService {
@@ -29,128 +42,132 @@ public class StudentService {
     private EmailService emailService;
 
     @Autowired
-    private EmailVerificationService emailVerificationService;
+    private EmailConfirmRepository emailConfirmRepository;
+
+    @Autowired
+    private EmailConfirmationService emailConfirmationService;
+
+    @Autowired
+    private LessonRepository lessonRepository;
+
+    @Autowired
+    private StudentLessonRepository studentLessonRepository;
+
+    @Value("${app.confirm-email.student-base-url}")
+    private String emailConfirmBaseUrl;
 
     @Transactional
-    public StudentAuthResponse signUp(StudentSignUpRequest request) {
-        // Verify email is real
-        if (!emailVerificationService.isEmailValid(request.getEmail())) {
-            throw new RuntimeException("Invalid or disposable email address. Please use a real email!");
-        }
-
-        // Check if email already exists
+    public AuthResponse signUp(SignUpRequest request) {
         if (studentRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered!");
+            throw new BadRequestException("Email already registered!");
         }
 
-        // Validate birth year
-        int currentYear = LocalDateTime.now().getYear();
-        if (request.getBirthYear() > currentYear - 10) {
-            throw new RuntimeException("Student must be at least 10 years old!");
-        }
-
-        // Create new student
         StudentModel student = new StudentModel();
         student.setFullName(request.getFullName());
         student.setEmail(request.getEmail());
         student.setPassword(passwordEncoder.encode(request.getPassword()));
-        student.setBirthYear(request.getBirthYear());
-        student.setCurrentAcademicYear(request.getCurrentAcademicYear());
-        student.setPhoneNumber(request.getPhoneNumber());
-        student.setBio(request.getBio());
+        student.setEmailConfirmed(false);
 
         student = studentRepository.save(student);
 
-        // Generate JWT token
-        String token = jwtUtils.generateToken(student.getEmail(), "STUDENT");
+        sendEmailConfirmation(student);
 
-
-        return new StudentAuthResponse(
-                token,
-                student.getId(),
-                student.getFullName(),
-                student.getEmail(),
-                student.getBirthYear(),
-                student.getCurrentAcademicYear(),
-                student.getPhoneNumber(),
-                student.getBio()
-        );
+        String token = jwtUtils.generateToken(student.getEmail());
+        return new AuthResponse(token, student.getId(), student.getFullName(), student.getEmail());
     }
 
-    public StudentAuthResponse login(LoginRequest request) {
-        // Find student by email
+    public AuthResponse login(LoginRequest request) {
         StudentModel student = studentRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email!"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password!"));
 
-        // Check password
         if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {
-            throw new RuntimeException("Invalid password!");
+            throw new UnauthorizedException("Invalid email or password!");
         }
 
-        // Generate JWT token
-        String token = jwtUtils.generateToken(student.getEmail(), "STUDENT");
-
-        return new StudentAuthResponse(
-                token,
-                student.getId(),
-                student.getFullName(),
-                student.getEmail(),
-                student.getBirthYear(),
-                student.getCurrentAcademicYear(),
-                student.getPhoneNumber(),
-                student.getBio()
-        );
+        String token = jwtUtils.generateToken(student.getEmail());
+        return new AuthResponse(token, student.getId(), student.getFullName(), student.getEmail());
     }
 
     @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) throws IOException {
-        // Find student by email
-        StudentModel student = studentRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("No account found with this email!"));
+    public JoinRequestDto createJoinRequest(Long lessonId, String studentEmail) {
+        StudentModel student = studentRepository.findByEmail(studentEmail)
+                .orElseThrow(() -> new NotFoundException("Student not found!"));
 
-        // Generate reset code
-        String resetCode = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        LessonModel lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
-        student.setResetPasswordToken(resetCode);
-        student.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(5));
+        if (studentLessonRepository.existsByLessonAndStudent(lesson, student)) {
+            throw new BadRequestException("You have already requested or joined this class.");
+        }
 
-        emailService.sendEmail(student.getEmail(), resetCode);
+        StudentLessonModel sl = new StudentLessonModel();
+        sl.setLesson(lesson);
+        sl.setStudent(student);
+        sl.setStatus(EnrollmentStatus.PENDING);
 
-        studentRepository.save(student);
+        sl = studentLessonRepository.save(sl);
+
+        StudentSummaryDto studentSummary = new StudentSummaryDto(student.getId(), student.getFullName(), student.getEmail());
+        return new JoinRequestDto(sl.getId(), lesson.getId(), studentSummary, sl.getStatus());
+    }
+
+    @Transactional
+    public void confirmEmail(ConfirmEmailRequest request) {
+        EmailConfirmModel confirm = emailConfirmRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadRequestException("No confirmation request found for this email!"));
+
+        if (confirm.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Confirmation code has expired!");
+        }
+
+        String providedHash = JwtUtils.sha256Hex(request.getCode());
+        if (!providedHash.equals(confirm.getConfirmationCode())) {
+            throw new BadRequestException("Invalid confirmation code!");
+        }
+
+        emailConfirmationService.confirmEmail(request.getEmail());
+        emailConfirmRepository.delete(confirm);
     }
 
     @Transactional(readOnly = true)
-    public String verifyResetCode(VerifyResetCodeRequest request) {
-        StudentModel student = studentRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("No account found with this email!"));
+    public AuthResponse getProfile(String email, String token) {
+        StudentModel student = studentRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Student not found!"));
 
-        if (!student.getResetPasswordToken().equals(request.getCode())) {
-            throw new RuntimeException("Invalid reset code!");
-        }
-
-        if (student.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Reset code has expired!");
-        }
-
-        return jwtUtils.generateResetToken(request.getEmail());
+        return new AuthResponse(
+                token,
+                student.getId(),
+                student.getFullName(),
+                student.getEmail()
+        );
     }
 
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        String email = jwtUtils.validateResetToken(request.getResetToken());
+    private void sendEmailConfirmation(StudentModel student) {
+        String token = JwtUtils.generateURLSafeToken();
+        String tokenHash = JwtUtils.sha256Hex(token);
 
-        if (email == null) {
-            throw new RuntimeException("Invalid reset token!");
+        Optional<EmailConfirmModel> existing = emailConfirmRepository.findByEmail(student.getEmail());
+        EmailConfirmModel confirm = existing.orElseGet(EmailConfirmModel::new);
+
+        confirm.setEmail(student.getEmail());
+        confirm.setUserType(UserType.STUDENT);
+        confirm.setUserId(student.getId());
+        confirm.setConfirmationCode(tokenHash);
+        confirm.setExpiresAt(LocalDateTime.now().plusHours(24));
+
+        emailConfirmRepository.save(confirm);
+
+        String encodedEmail = URLEncoder.encode(student.getEmail(), StandardCharsets.UTF_8);
+        String confirmationLink = String.format("%s?email=%s&code=%s", emailConfirmBaseUrl, encodedEmail, token);
+
+        String htmlContent = EmailTemplates.emailConfirmationEmail(confirmationLink);
+        String subject = "Confirm your Catalyst account";
+        Content content = new Content("text/html", htmlContent);
+
+        try {
+            emailService.sendEmail(student.getEmail(), subject, content);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to send confirmation email", e);
         }
-
-        StudentModel student = studentRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No account found!"));
-
-        // Update password
-        student.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        student.setResetPasswordToken(null);
-        student.setResetPasswordTokenExpiry(null);
-
-        studentRepository.save(student);
     }
 }

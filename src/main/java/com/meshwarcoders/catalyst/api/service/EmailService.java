@@ -65,19 +65,12 @@ public class EmailService {
               <p>This code will expire in <strong>5 minutes</strong>.</p>
               <p>If you didn’t request a password reset, please ignore this email.</p>
 
-              <div class="footer">
-                <p>Best regards,<br>Catalyst Team</p>
-              </div>
-            </div>
-          </body>
-        </html>
-        """.formatted(code);
-    String subject = "Catalyst Password Reset Code";
-    System.out.println("Sending from: " + fromEmail);
-    Email from = new Email(fromEmail);
-    Email toEmail = new Email(to);
-    Content content = new Content("text/html", htmlContent);
-    Mail mail = new Mail(from, subject, toEmail, content);
+    public void sendEmail(String to, String subject, Content content) throws IOException {
+        //String subject = "Catalyst Password Reset Code";
+        Email from = new Email(fromEmail);
+        Email toEmail = new Email(to);
+        //Content content = new Content("text/html", htmlContent);
+        Mail mail = new Mail(from, subject, toEmail, content);
 
     SendGrid sg = new SendGrid(mailSenderApiKey);
     Request request = new Request();

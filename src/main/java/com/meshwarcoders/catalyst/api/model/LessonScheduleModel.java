@@ -1,7 +1,8 @@
 package com.meshwarcoders.catalyst.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.meshwarcoders.catalyst.api.model.common.WeekDay;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity(name = "lesson_schedules")
@@ -16,40 +17,37 @@ public class LessonScheduleModel {
     @JoinColumn(name = "lesson_id")
     private LessonModel lesson;
 
-    private LocalDateTime startTime;
+    private LocalTime startTime;
 
-    private Integer duration; // in minutes
+    private WeekDay day;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
+    private Integer duration;
+
+    public Integer getDuration() {
+        return duration;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public WeekDay getDay() {
+        return day;
     }
 
-    public LessonModel getLesson() {
-        return lesson;
+    public LocalTime getStartTime() {
+        return startTime;
     }
 
     public void setLesson(LessonModel lesson) {
         this.lesson = lesson;
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
-    }
-
-    public Integer getDuration() {
-        return duration;
     }
 
     public void setDuration(Integer duration) {
         this.duration = duration;
+    }
+
+    public void setDay(WeekDay day) {
+        this.day = day;
     }
 }
