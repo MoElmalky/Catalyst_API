@@ -9,15 +9,23 @@ import com.meshwarcoders.catalyst.api.service.ExamService;
 import com.meshwarcoders.catalyst.api.service.LessonService;
 import com.meshwarcoders.catalyst.api.service.TeacherService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/teachers")
 @CrossOrigin(origins = "*")
 public class TeacherController {
+
+    private static final Logger log = LoggerFactory.getLogger(TeacherController.class);
 
     @Autowired
     private TeacherService teacherService;
@@ -182,7 +190,7 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.getStudentIds());
+        var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.getStudentLessonIds());
         return ResponseEntity.ok(new ApiResponse(true,
                 "Join requests approved successfully.", result));
     }
@@ -199,7 +207,7 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.getStudentIds());
+        var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.getStudentLessonIds());
         return ResponseEntity.ok(new ApiResponse(true,
                 "Join requests rejected successfully.", result));
     }
@@ -254,6 +262,38 @@ public class TeacherController {
 
         return ResponseEntity.ok(new ApiResponse(true,"Lesson created successfully!",data));
 
+    }
+
+    @GetMapping("/lessons")
+    public ResponseEntity<ApiResponse> getLessons(Authentication authentication){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Missing or invalid token!");
+        }
+
+        String email = authentication.getName();
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+        List<LessonDto> lessons = lessonService.getTeacherLessons(teacher.getId());
+        Map<String, Object> data = new HashMap<>();
+        data.put("number", lessons.size());
+        data.put("lessons", lessons);
+        return ResponseEntity.ok(new ApiResponse(true,"lessons returned successfully!", data));
+    }
+
+    @GetMapping("/lessons/{lessonId}")
+    public ResponseEntity<ApiResponse> getLesson(@PathVariable Long lessonId,
+                                                 Authentication authentication){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("Missing or invalid token!");
+        }
+
+        String email = authentication.getName();
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+        LessonDto lesson = lessonService.getLesson(lessonId, teacher.getId());
+        return ResponseEntity.ok(new ApiResponse(true,"lesson returned successfully!", lesson));
     }
 
 }

@@ -7,13 +7,13 @@ import java.util.List;
 public class JoinRequestBulkActionRequest {
 
     @NotEmpty(message = "studentIds cannot be empty")
-    private List<Long> studentIds;
+    private List<Long> studentLessonIds;
 
-    public List<Long> getStudentIds() {
-        return studentIds;
+    public List<Long> getStudentLessonIds() {
+        return studentLessonIds;
     }
 
-    public void setStudentIds(List<Long> studentIds) {
-        this.studentIds = studentIds;
+    public void setStudentLessonIds(List<Long> studentLessonIds) {
+        this.studentLessonIds = studentLessonIds;
     }
 }

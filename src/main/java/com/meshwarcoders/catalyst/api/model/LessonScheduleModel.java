@@ -1,5 +1,6 @@
 package com.meshwarcoders.catalyst.api.model;
 
+import com.meshwarcoders.catalyst.api.dto.LessonScheduleDto;
 import com.meshwarcoders.catalyst.api.model.common.WeekDay;
 import jakarta.persistence.*;
 
@@ -48,5 +49,10 @@ public class LessonScheduleModel {
 
     public void setDay(WeekDay day) {
         this.day = day;
+    }
+
+    @Override
+    public String toString(){
+        return "Day: "+day+"\nTime: "+startTime.toString()+"\nDuration: "+duration;
     }
 }

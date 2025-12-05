@@ -21,15 +21,15 @@ public class LessonModel {
     @ManyToOne
     private TeacherModel teacher;
 
-    @JsonIgnore
+
     @OneToMany(mappedBy = "lesson")
     private List<StudentLessonModel> studentLessons = new ArrayList<>();
 
-    @JsonIgnore
+
     @OneToMany(mappedBy = "lesson")
     private List<LessonScheduleModel> lessonSchedules = new ArrayList<>();
 
-    @JsonIgnore
+
     @OneToMany(mappedBy = "lesson")
     private List<ExamModel> exams = new ArrayList<>();
 
@@ -41,9 +41,6 @@ public class LessonModel {
         return teacher;
     }
 
-    public List<LessonScheduleModel> getLessonSchedules() {
-        return lessonSchedules;
-    }
 
     public String getSubject() {
         return subject;

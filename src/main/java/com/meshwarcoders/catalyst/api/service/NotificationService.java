@@ -40,7 +40,6 @@ public class NotificationService {
             try {
                 n.setPayload(objectMapper.writeValueAsString(payload));
             } catch (JsonProcessingException e) {
-                // Fallback: ignore payload if serialization fails
                 n.setPayload(null);
             }
         }
@@ -52,8 +51,7 @@ public class NotificationService {
     public List<NotificationDto> getNotificationsForUser(String email) {
         return notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(email)
                 .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+                .map(this::toDto).toList();
     }
 
     @Transactional

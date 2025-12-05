@@ -8,6 +8,7 @@ public class CatalystApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(CatalystApplication.class, args);
+		System.out.println("App Started!!!!!!!!!");
 	}
 
 }

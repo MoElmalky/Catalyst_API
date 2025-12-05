@@ -22,8 +22,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class TeacherService {
@@ -181,7 +180,7 @@ public class TeacherService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<JoinRequestDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
+    public List<JoinRequestDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
         LessonModel lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
@@ -189,7 +188,7 @@ public class TeacherService {
             throw new UnauthorizedException("You do not own this lesson!");
         }
 
-        java.util.List<StudentLessonModel> pending = studentLessonRepository
+        List<StudentLessonModel> pending = studentLessonRepository
                 .findByLessonAndStatus(lesson, EnrollmentStatus.PENDING);
 
         return pending.stream()
@@ -206,18 +205,18 @@ public class TeacherService {
     }
 
     @Transactional
-    public JoinRequestBulkActionResultDto approveJoinRequests(Long teacherId, Long lessonId, java.util.List<Long> studentIds) {
-        return updateJoinRequestsStatus(teacherId, lessonId, studentIds, EnrollmentStatus.APPROVED);
+    public JoinRequestBulkActionResultDto approveJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+        return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.APPROVED);
     }
 
     @Transactional
-    public JoinRequestBulkActionResultDto rejectJoinRequests(Long teacherId, Long lessonId, java.util.List<Long> studentIds) {
-        return updateJoinRequestsStatus(teacherId, lessonId, studentIds, EnrollmentStatus.REJECTED);
+    public JoinRequestBulkActionResultDto rejectJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+        return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.REJECTED);
     }
 
     private JoinRequestBulkActionResultDto updateJoinRequestsStatus(Long teacherId,
                                                                     Long lessonId,
-                                                                    java.util.List<Long> studentIds,
+                                                                    List<Long> studentLessonIds,
                                                                     EnrollmentStatus targetStatus) {
         LessonModel lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Lesson not found!"));
@@ -226,31 +225,26 @@ public class TeacherService {
             throw new UnauthorizedException("You do not own this lesson!");
         }
 
-        java.util.List<Long> affected = new java.util.ArrayList<>();
-        java.util.List<Long> skipped = new java.util.ArrayList<>();
+        List<Long> affected = new ArrayList<>();
+        List<Long> skipped = new ArrayList<>();
 
-        for (Long studentId : studentIds) {
-            StudentModel student = studentRepository.findById(studentId).orElse(null);
-            if (student == null) {
-                skipped.add(studentId);
-                continue;
-            }
+        for (Long studentLessonId : studentLessonIds) {
 
-            java.util.Optional<StudentLessonModel> slOpt = studentLessonRepository.findByLessonAndStudent(lesson, student);
+            Optional<StudentLessonModel> slOpt = studentLessonRepository.findById(studentLessonId);
             if (slOpt.isEmpty()) {
-                skipped.add(studentId);
+                skipped.add(studentLessonId);
                 continue;
             }
 
             StudentLessonModel sl = slOpt.get();
             if (sl.getStatus() != EnrollmentStatus.PENDING) {
-                skipped.add(studentId);
+                skipped.add(studentLessonId);
                 continue;
             }
 
             sl.setStatus(targetStatus);
             studentLessonRepository.save(sl);
-            affected.add(studentId);
+            affected.add(studentLessonId);
 
             // Send notification to the student
             NotificationType notifType = targetStatus == EnrollmentStatus.APPROVED
@@ -264,12 +258,12 @@ public class TeacherService {
                     ? "Your request to join the class was approved."
                     : "Your request to join the class was rejected.";
 
-            java.util.Map<String, Object> payload = java.util.Map.of(
+            Map<String, Object> payload = Map.of(
                     "lessonId", lessonId,
                     "lessonSubject", lesson.getSubject()
             );
 
-            notificationService.sendNotification(student.getEmail(), notifType, title, body, payload);
+            notificationService.sendNotification(sl.getStudent().getEmail(), notifType, title, body, payload);
         }
 
         return new JoinRequestBulkActionResultDto(lessonId, affected, skipped);

@@ -4,13 +4,13 @@ import java.util.List;
 
 public class JoinRequestBulkActionResultDto {
     private Long lessonId;
-    private List<Long> affectedStudentIds;
-    private List<Long> skippedStudentIds;
+    private List<Long> affectedStudentLessonsIds;
+    private List<Long> skippedStudentLessonsIds;
 
     public JoinRequestBulkActionResultDto(Long lessonId, List<Long> affectedStudentIds, List<Long> skippedStudentIds) {
         this.lessonId = lessonId;
-        this.affectedStudentIds = affectedStudentIds;
-        this.skippedStudentIds = skippedStudentIds;
+        this.affectedStudentLessonsIds = affectedStudentIds;
+        this.skippedStudentLessonsIds = skippedStudentIds;
     }
 
     public Long getLessonId() {
@@ -18,10 +18,10 @@ public class JoinRequestBulkActionResultDto {
     }
 
     public List<Long> getAffectedStudentIds() {
-        return affectedStudentIds;
+        return affectedStudentLessonsIds;
     }
 
     public List<Long> getSkippedStudentIds() {
-        return skippedStudentIds;
+        return skippedStudentLessonsIds;
     }
 }
