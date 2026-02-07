@@ -1,6 +1,6 @@
 package com.meshwarcoders.catalyst.api.exception;
 
-import com.meshwarcoders.catalyst.api.dto.ApiResponse;
+import com.meshwarcoders.catalyst.api.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

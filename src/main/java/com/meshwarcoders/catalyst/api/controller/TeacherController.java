@@ -1,6 +1,7 @@
 package com.meshwarcoders.catalyst.api.controller;
 
-import com.meshwarcoders.catalyst.api.dto.*;
+import com.meshwarcoders.catalyst.api.dto.request.*;
+import com.meshwarcoders.catalyst.api.dto.response.*;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.TeacherModel;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/teachers")
+@RequestMapping("/api/teacher")
 @CrossOrigin(origins = "*")
 public class TeacherController {
 
@@ -39,91 +40,6 @@ public class TeacherController {
     @Autowired
     private TeacherRepository teacherRepository;
 
-    // ================== SIGNUP ==================
-    @PostMapping("/signup")
-    public ResponseEntity<ApiResponse> signUp(@Valid @RequestBody SignUpRequest request) {
-        AuthResponse authResponse = teacherService.signUp(request);
-        ApiResponse response = new ApiResponse(true, "Teacher registered successfully!", authResponse);
-        return ResponseEntity.ok(response);
-    }
-
-    // ================== LOGIN ==================
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse authResponse = teacherService.login(request);
-        ApiResponse response = new ApiResponse(true, "Login successful!", authResponse);
-        return ResponseEntity.ok(response);
-    }
-
-    // ================== FORGOT PASSWORD ==================
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        teacherService.forgotPassword(request);
-        ApiResponse response = new ApiResponse(true,
-                "Password reset instructions have been sent to your email!");
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/verify-reset-code")
-    public ResponseEntity<ApiResponse> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request){
-        String data = teacherService.verifyResetCode(request);
-        ApiResponse response = new ApiResponse(true, "Code verified successfully!", data);
-        return ResponseEntity.ok(response);
-    }
-
-    // ================== RESET PASSWORD ==================
-    @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        teacherService.resetPassword(request);
-        ApiResponse response = new ApiResponse(true, "Password reset successfully!");
-        return ResponseEntity.ok(response);
-    }
-
-    // ================== CONFIRM EMAIL ==================
-    @PostMapping("/confirm-email")
-    public ResponseEntity<ApiResponse> confirmEmail(@Valid @RequestBody ConfirmEmailRequest request) {
-        teacherService.confirmEmail(request);
-        ApiResponse response = new ApiResponse(true, "Email confirmed successfully!");
-        return ResponseEntity.ok(response);
-    }
-
-    // New: allow confirmation via GET link from email so backend handles everything
-    @GetMapping("/confirm-email")
-    public ResponseEntity<String> confirmEmailViaLink(@RequestParam("email") String email,
-                                                      @RequestParam("code") String code) {
-        ConfirmEmailRequest request = new ConfirmEmailRequest();
-        request.setEmail(email);
-        request.setCode(code);
-        teacherService.confirmEmail(request);
-        return ResponseEntity.ok("Email confirmed successfully. You can close this page and return to the app.");
-    }
-
-    // ================== PROFILE (GET) ==================
-    @GetMapping("/profile")
-    public ResponseEntity<ApiResponse> getProfile(Authentication authentication,
-                                                 @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
-        }
-
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
-
-        String token = null;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-        }
-
-        AuthResponse data = new AuthResponse(
-                token,
-                teacher.getId(),
-                teacher.getFullName(),
-                teacher.getEmail());
-
-        return ResponseEntity.ok(new ApiResponse(true, "Profile fetched successfully!", data));
-    }
-
     // ================== GET ALL TEACHERS ==================
     @GetMapping("/all")
     public ResponseEntity<ApiResponse> getAllTeachers() {
@@ -132,7 +48,7 @@ public class TeacherController {
                         t.getId(),
                         t.getFullName(),
                         t.getEmail(),
-                        t.isEmailConfirmed(),
+                        t.getEmailConfirmed(),
                         t.getCreatedAt()
                 ))
                 .toList();
@@ -152,7 +68,7 @@ public class TeacherController {
                 teacher.getId(),
                 teacher.getFullName(),
                 teacher.getEmail(),
-                teacher.isEmailConfirmed(),
+                teacher.getEmailConfirmed(),
                 teacher.getCreatedAt()
         );
 
@@ -162,7 +78,7 @@ public class TeacherController {
 
     // ================== JOIN REQUESTS (TEACHER) ==================
 
-    @GetMapping("/lessons/{lessonId}/join-requests")
+    @GetMapping("/lesson/{lessonId}/join-requests")
     public ResponseEntity<ApiResponse> getPendingJoinRequests(@PathVariable Long lessonId,
                                                               Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -178,9 +94,9 @@ public class TeacherController {
                 "Pending join requests fetched successfully!", list));
     }
 
-    @PostMapping("/lessons/{lessonId}/join-requests/approve")
+    @PostMapping("/lesson/{lessonId}/join-requests/approve")
     public ResponseEntity<ApiResponse> approveJoinRequests(@PathVariable Long lessonId,
-                                                           @Valid @RequestBody JoinRequestBulkActionRequest request,
+                                                           @Valid @RequestBody JoinRequest request,
                                                            Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Missing or invalid token!");
@@ -190,14 +106,14 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.getStudentLessonIds());
+        var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
         return ResponseEntity.ok(new ApiResponse(true,
                 "Join requests approved successfully.", result));
     }
 
-    @PostMapping("/lessons/{lessonId}/join-requests/reject")
+    @PostMapping("/lesson/{lessonId}/join-requests/reject")
     public ResponseEntity<ApiResponse> rejectJoinRequests(@PathVariable Long lessonId,
-                                                          @Valid @RequestBody JoinRequestBulkActionRequest request,
+                                                          @Valid @RequestBody JoinRequest request,
                                                           Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Missing or invalid token!");
@@ -207,14 +123,14 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.getStudentLessonIds());
+        var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
         return ResponseEntity.ok(new ApiResponse(true,
                 "Join requests rejected successfully.", result));
     }
 
     // ================== EXAMS (TEACHER) ==================
 
-    @PostMapping("/lessons/{lessonId}/exams")
+    @PostMapping("/lesson/{lessonId}/exams")
     public ResponseEntity<ApiResponse> createExam(@PathVariable Long lessonId,
                                                   @Valid @RequestBody CreateExamRequest request,
                                                   Authentication authentication) {
@@ -231,7 +147,7 @@ public class TeacherController {
                 "Exam created successfully!", exam));
     }
 
-    @GetMapping("/lessons/{lessonId}/exams")
+    @GetMapping("/lesson/{lessonId}/exams")
     public ResponseEntity<ApiResponse> getExamsForLesson(@PathVariable Long lessonId,
                                                          Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -247,7 +163,7 @@ public class TeacherController {
                 "Exams fetched successfully!", exams));
     }
 
-    @PostMapping("/lessons")
+    @PostMapping("/lesson")
     public ResponseEntity<ApiResponse> createLesson(@Valid @RequestBody CreateLessonRequest request,
                                                     Authentication authentication){
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -258,13 +174,13 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        LessonDto data = lessonService.createLesson(teacher.getId(),request);
+        LessonSummaryDto data = lessonService.createLesson(teacher.getId(),request);
 
         return ResponseEntity.ok(new ApiResponse(true,"Lesson created successfully!",data));
 
     }
 
-    @GetMapping("/lessons")
+    @GetMapping("/lesson")
     public ResponseEntity<ApiResponse> getLessons(Authentication authentication){
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("Missing or invalid token!");
@@ -274,14 +190,15 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        List<LessonDto> lessons = lessonService.getTeacherLessons(teacher.getId());
+        List<LessonSummaryDto> lessons = lessonService.getTeacherLessons(teacher.getId());
         Map<String, Object> data = new HashMap<>();
         data.put("number", lessons.size());
         data.put("lessons", lessons);
         return ResponseEntity.ok(new ApiResponse(true,"lessons returned successfully!", data));
     }
 
-    @GetMapping("/lessons/{lessonId}")
+    // TODO: Make this endpoint return the details of the lesson.
+    @GetMapping("/lesson/{lessonId}")
     public ResponseEntity<ApiResponse> getLesson(@PathVariable Long lessonId,
                                                  Authentication authentication){
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -292,8 +209,9 @@ public class TeacherController {
         TeacherModel teacher = teacherRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        LessonDto lesson = lessonService.getLesson(lessonId, teacher.getId());
+        LessonDetailsDto lesson = lessonService.getLesson(lessonId, teacher.getId());
         return ResponseEntity.ok(new ApiResponse(true,"lesson returned successfully!", lesson));
     }
 
+    // TODO: create an endpoint that returns the join-requests of the teacher!
 }

@@ -1,6 +1,10 @@
 package com.meshwarcoders.catalyst.api.service;
 
-import com.meshwarcoders.catalyst.api.dto.*;
+import com.meshwarcoders.catalyst.api.dto.request.*;
+import com.meshwarcoders.catalyst.api.dto.response.AuthResponse;
+import com.meshwarcoders.catalyst.api.dto.response.JoinDto;
+import com.meshwarcoders.catalyst.api.dto.response.JoinStudentDto;
+import com.meshwarcoders.catalyst.api.dto.response.StudentSummaryDto;
 import com.meshwarcoders.catalyst.api.exception.BadRequestException;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
@@ -31,19 +35,10 @@ public class TeacherService {
     private TeacherRepository teacherRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private JwtUtils jwtUtils;
 
     @Autowired
     private EmailService emailService;
-
-    @Autowired
-    private EmailConfirmRepository emailConfirmRepository;
-
-    @Autowired
-    private EmailConfirmationService emailConfirmationService;
 
     @Autowired
     private LessonRepository lessonRepository;
@@ -54,133 +49,8 @@ public class TeacherService {
     @Autowired
     private StudentRepository studentRepository;
 
-    @Autowired
-    private NotificationService notificationService;
-
-    @Value("${app.confirm-email.base-url}")
-    private String emailConfirmBaseUrl;
-
-    @Transactional
-    public AuthResponse signUp(SignUpRequest request) {
-        // Check if email already exists
-        if (teacherRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Email already registered!");
-        }
-
-        // Create new teacher
-        TeacherModel teacher = new TeacherModel();
-        teacher.setFullName(request.getFullName());
-        teacher.setEmail(request.getEmail());
-        teacher.setPassword(passwordEncoder.encode(request.getPassword()));
-        teacher.setEmailConfirmed(false);
-
-        teacher = teacherRepository.save(teacher);
-
-        sendEmailConfirmation(teacher);
-
-        // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
-
-        return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        // Find teacher by email
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password!"));
-
-        // Check password
-        if (!passwordEncoder.matches(request.getPassword(), teacher.getPassword())) {
-            throw new UnauthorizedException("Invalid email or password!");
-        }
-
-        // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
-
-        return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
-    }
-
-    @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) {
-        // Find teacher by email
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("No account found with this email!"));
-
-        // Generate reset token
-        String resetCode = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-
-        teacher.setResetPasswordToken(passwordEncoder.encode(resetCode));
-        teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(5));
-
-        String htmlContent = EmailTemplates.passwordResetEmail(resetCode);
-        String subject = "Catalyst Password Reset Code";
-
-        Content content = new Content("text/html", htmlContent);
-
-        try {
-            emailService.sendEmail(teacher.getEmail(), subject, content);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to send password reset email", e);
-        }
-
-        teacherRepository.save(teacher);
-    }
-
     @Transactional(readOnly = true)
-    public String verifyResetCode(VerifyResetCodeRequest request) {
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("No account found with this email!"));
-
-        if (!passwordEncoder.matches(request.getCode(), teacher.getResetPasswordToken())) {
-            throw new BadRequestException("Invalid reset token!");
-        }
-
-        if (teacher.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Reset token has expired!");
-        }
-
-        return jwtUtils.generateResetToken(request.getEmail());
-    }
-
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        String email = jwtUtils.validateResetToken(request.getResetToken());
-
-        if (email == null) {
-            throw new BadRequestException("Invalid reset token!");
-        }
-
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("No account found!"));
-
-        // Update password
-        teacher.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        teacher.setResetPasswordToken(null);
-        teacher.setResetPasswordTokenExpiry(null);
-
-        teacherRepository.save(teacher);
-    }
-
-    @Transactional
-    public void confirmEmail(ConfirmEmailRequest request) {
-        EmailConfirmModel confirm = emailConfirmRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("No confirmation request found for this email!"));
-
-        if (confirm.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Confirmation code has expired!");
-        }
-
-        String providedHash = JwtUtils.sha256Hex(request.getCode());
-        if (!providedHash.equals(confirm.getConfirmationCode())) {
-            throw new BadRequestException("Invalid confirmation code!");
-        }
-
-        emailConfirmationService.confirmEmail(request.getEmail());
-        emailConfirmRepository.delete(confirm);
-    }
-
-    @Transactional(readOnly = true)
-    public List<JoinRequestDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
+    public List<JoinStudentDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
         LessonModel lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
@@ -192,7 +62,7 @@ public class TeacherService {
                 .findByLessonAndStatus(lesson, EnrollmentStatus.PENDING);
 
         return pending.stream()
-                .map(sl -> new JoinRequestDto(
+                .map(sl -> new JoinStudentDto(
                         sl.getId(),
                         lesson.getId(),
                         new StudentSummaryDto(
@@ -205,19 +75,19 @@ public class TeacherService {
     }
 
     @Transactional
-    public JoinRequestBulkActionResultDto approveJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+    public JoinDto approveJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
         return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.APPROVED);
     }
 
     @Transactional
-    public JoinRequestBulkActionResultDto rejectJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+    public JoinDto rejectJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
         return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.REJECTED);
     }
 
-    private JoinRequestBulkActionResultDto updateJoinRequestsStatus(Long teacherId,
-                                                                    Long lessonId,
-                                                                    List<Long> studentLessonIds,
-                                                                    EnrollmentStatus targetStatus) {
+    private JoinDto updateJoinRequestsStatus(Long teacherId,
+                                             Long lessonId,
+                                             List<Long> studentLessonIds,
+                                             EnrollmentStatus targetStatus) {
         LessonModel lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
@@ -245,58 +115,8 @@ public class TeacherService {
             sl.setStatus(targetStatus);
             studentLessonRepository.save(sl);
             affected.add(studentLessonId);
-
-            // Send notification to the student
-            NotificationType notifType = targetStatus == EnrollmentStatus.APPROVED
-                    ? NotificationType.JOIN_REQUEST_APPROVED
-                    : NotificationType.JOIN_REQUEST_REJECTED;
-
-            String title = targetStatus == EnrollmentStatus.APPROVED
-                    ? "Join request approved"
-                    : "Join request rejected";
-            String body = targetStatus == EnrollmentStatus.APPROVED
-                    ? "Your request to join the class was approved."
-                    : "Your request to join the class was rejected.";
-
-            Map<String, Object> payload = Map.of(
-                    "lessonId", lessonId,
-                    "lessonSubject", lesson.getSubject()
-            );
-
-            notificationService.sendNotification(sl.getStudent().getEmail(), notifType, title, body, payload);
         }
 
-        return new JoinRequestBulkActionResultDto(lessonId, affected, skipped);
-    }
-
-    private void sendEmailConfirmation(TeacherModel teacher) {
-        // Generate a long, URL-safe token and store only its hash in the DB
-        String token = JwtUtils.generateURLSafeToken();
-        String tokenHash = JwtUtils.sha256Hex(token);
-
-        Optional<EmailConfirmModel> existing = emailConfirmRepository.findByEmail(teacher.getEmail());
-        EmailConfirmModel confirm = existing.orElseGet(EmailConfirmModel::new);
-
-        confirm.setEmail(teacher.getEmail());
-        confirm.setUserType(UserType.TEACHER);
-        confirm.setUserId(teacher.getId());
-        confirm.setConfirmationCode(tokenHash);
-        confirm.setExpiresAt(LocalDateTime.now().plusHours(24));
-
-        emailConfirmRepository.save(confirm);
-
-        // Build a backend confirmation URL that the user can click directly from email
-        String encodedEmail = URLEncoder.encode(teacher.getEmail(), StandardCharsets.UTF_8);
-        String confirmationLink = String.format("%s?email=%s&code=%s", emailConfirmBaseUrl, encodedEmail, token);
-
-        String htmlContent = EmailTemplates.emailConfirmationEmail(confirmationLink);
-        String subject = "Confirm your Catalyst account";
-        Content content = new Content("text/html", htmlContent);
-
-        try {
-            emailService.sendEmail(teacher.getEmail(), subject, content);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to send confirmation email", e);
-        }
+        return new JoinDto(lessonId, affected, skipped);
     }
 }

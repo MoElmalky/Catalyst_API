@@ -2,15 +2,20 @@ package com.meshwarcoders.catalyst.api.model;
 
 import com.meshwarcoders.catalyst.api.model.common.QuestionType;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "exam_questions")
+@Getter @Setter
 public class ExamQuestionModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -30,28 +35,4 @@ public class ExamQuestionModel {
     private Integer correctOptionIndex;
 
     private Integer maxPoints;
-
-    public void setExam(ExamModel exam) {
-        this.exam = exam;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public void setType(QuestionType type) {
-        this.type = type;
-    }
-
-    public void setOptions(List<String> options) {
-        this.options = options;
-    }
-
-    public void setCorrectOptionIndex(Integer correctOptionIndex) {
-        this.correctOptionIndex = correctOptionIndex;
-    }
-
-    public void setMaxPoints(Integer maxPoints) {
-        this.maxPoints = maxPoints;
-    }
 }

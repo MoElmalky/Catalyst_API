@@ -1,8 +1,8 @@
 package com.meshwarcoders.catalyst.api.service;
 
-import com.meshwarcoders.catalyst.api.dto.CreateExamRequest;
-import com.meshwarcoders.catalyst.api.dto.ExamQuestionRequest;
-import com.meshwarcoders.catalyst.api.dto.ExamSummaryDto;
+import com.meshwarcoders.catalyst.api.dto.request.CreateExamRequest;
+import com.meshwarcoders.catalyst.api.dto.request.ExamQuestionRequest;
+import com.meshwarcoders.catalyst.api.dto.response.ExamSummaryDto;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
@@ -52,51 +52,30 @@ public class ExamService {
 
         ExamModel exam = new ExamModel();
         exam.setLesson(lesson);
-        exam.setExamName(request.getExamName());
-        exam.setMaxGrade(request.getMaxGrade());
+        exam.setExamName(request.examName());
+        exam.setMaxGrade(request.maxGrade());
+        exam.setExamType(request.examType());
 
-        if (request.getExamDateTime() != null && !request.getExamDateTime().isBlank()) {
-            exam.setExamDateTime(LocalDateTime.parse(request.getExamDateTime()));
+        Integer defaultPoints = request.defaultPoints();;
+
+        if (request.examDateTime() != null && !request.examDateTime().isBlank()) {
+            exam.setExamDateTime(LocalDateTime.parse(request.examDateTime()));
         }
-        exam.setDurationMinutes(request.getDurationMinutes());
+        exam.setDurationMinutes(request.durationMinutes());
 
         exam = examRepository.save(exam);
 
-        if (request.getQuestions() != null) {
-            for (ExamQuestionRequest q : request.getQuestions()) {
+        if (request.questions() != null) {
+            for (ExamQuestionRequest q : request.questions()) {
                 ExamQuestionModel qm = new ExamQuestionModel();
                 qm.setExam(exam);
-                qm.setText(q.getText());
-                qm.setType(q.getType());
-                qm.setOptions(q.getOptions());
-                qm.setCorrectOptionIndex(q.getCorrectOptionIndex());
-                qm.setMaxPoints(q.getMaxPoints());
+                qm.setText(q.text());
+                qm.setType(q.type());
+                qm.setOptions(q.options());
+                qm.setCorrectOptionIndex(q.correctOptionIndex());
+                qm.setMaxPoints(q.maxPoints() == null ? defaultPoints : q.maxPoints());
                 examQuestionRepository.save(qm);
             }
-        }
-
-        // Notify all approved students in this lesson about the new exam
-        List<StudentLessonModel> approvedStudents = studentLessonRepository
-                .findByLessonAndStatus(lesson, EnrollmentStatus.APPROVED);
-
-        String dateTimeString = exam.getExamDateTime() != null ? exam.getExamDateTime().toString() : null;
-        for (StudentLessonModel sl : approvedStudents) {
-            StudentModel student = sl.getStudent();
-            java.util.Map<String, Object> payload = java.util.Map.of(
-                    "lessonId", lesson.getId(),
-                    "lessonSubject", lesson.getSubject(),
-                    "examId", exam.getId(),
-                    "examName", exam.getExamName(),
-                    "examDateTime", dateTimeString
-            );
-
-            notificationService.sendNotification(
-                    student.getEmail(),
-                    NotificationType.EXAM_CREATED,
-                    "New exam created",
-                    "A new exam has been scheduled for your class.",
-                    payload
-            );
         }
 
         return toSummaryDto(exam);
@@ -111,10 +90,9 @@ public class ExamService {
             throw new UnauthorizedException("You do not own this lesson!");
         }
 
-        return examRepository.findByLesson(lesson)
+        return lesson.getExams()
                 .stream()
-                .map(this::toSummaryDto)
-                .collect(Collectors.toList());
+                .map(this::toSummaryDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -147,7 +125,8 @@ public class ExamService {
                 exam.getExamName(),
                 exam.getMaxGrade(),
                 dateTimeString,
-                exam.getDurationMinutes()
+                exam.getDurationMinutes(),
+                exam.getExamType()
         );
     }
 }
