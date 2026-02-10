@@ -26,192 +26,202 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class TeacherController {
 
-    private static final Logger log = LoggerFactory.getLogger(TeacherController.class);
+        private static final Logger log = LoggerFactory.getLogger(TeacherController.class);
 
-    @Autowired
-    private TeacherService teacherService;
+        @Autowired
+        private TeacherService teacherService;
 
-    @Autowired
-    private ExamService examService;
+        @Autowired
+        private ExamService examService;
 
-    @Autowired
-    private LessonService lessonService;
+        @Autowired
+        private LessonService lessonService;
 
-    @Autowired
-    private TeacherRepository teacherRepository;
+        @Autowired
+        private TeacherRepository teacherRepository;
 
-    // ================== GET ALL TEACHERS ==================
-    @GetMapping("/all")
-    public ResponseEntity<ApiResponse> getAllTeachers() {
-        var teachers = teacherRepository.findAll().stream()
-                .map(t -> new TeacherResponse(
-                        t.getId(),
-                        t.getFullName(),
-                        t.getEmail(),
-                        t.getEmailConfirmed(),
-                        t.getCreatedAt()
-                ))
-                .toList();
+        // ================== GET ALL TEACHERS ==================
+        @GetMapping("/all")
+        public ResponseEntity<ApiResponse> getAllTeachers() {
+                var teachers = teacherRepository.findAll().stream()
+                                .map(t -> new TeacherResponse(
+                                                t.getId(),
+                                                t.getFullName(),
+                                                t.getEmail(),
+                                                t.getEmailConfirmed(),
+                                                t.getCreatedAt()))
+                                .toList();
 
-        return ResponseEntity.ok(
-                new ApiResponse(true, "Teachers fetched successfully!", teachers));
-    }
-
-    // ================== GET TEACHER BY ID ==================
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getTeacherById(@PathVariable Long id) {
-        var teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
-
-        TeacherResponse dto = new TeacherResponse(
-                teacher.getId(),
-                teacher.getFullName(),
-                teacher.getEmail(),
-                teacher.getEmailConfirmed(),
-                teacher.getCreatedAt()
-        );
-
-        return ResponseEntity.ok(
-                new ApiResponse(true, "Teacher fetched successfully!", dto));
-    }
-
-    // ================== JOIN REQUESTS (TEACHER) ==================
-
-    @GetMapping("/lesson/{lessonId}/join-requests")
-    public ResponseEntity<ApiResponse> getPendingJoinRequests(@PathVariable Long lessonId,
-                                                              Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                return ResponseEntity.ok(
+                                new ApiResponse(true, "Teachers fetched successfully!", teachers));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        // ================== GET TEACHER BY ID ==================
 
-        var list = teacherService.getPendingJoinRequests(teacher.getId(), lessonId);
-        return ResponseEntity.ok(new ApiResponse(true,
-                "Pending join requests fetched successfully!", list));
-    }
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse> getTeacherById(@PathVariable Long id) {
+                var teacher = teacherRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-    @PostMapping("/lesson/{lessonId}/join-requests/approve")
-    public ResponseEntity<ApiResponse> approveJoinRequests(@PathVariable Long lessonId,
-                                                           @Valid @RequestBody JoinRequest request,
-                                                           Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                TeacherResponse dto = new TeacherResponse(
+                                teacher.getId(),
+                                teacher.getFullName(),
+                                teacher.getEmail(),
+                                teacher.getEmailConfirmed(),
+                                teacher.getCreatedAt());
+
+                return ResponseEntity.ok(
+                                new ApiResponse(true, "Teacher fetched successfully!", dto));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        // ================== JOIN REQUESTS (TEACHER) ==================
 
-        var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
-        return ResponseEntity.ok(new ApiResponse(true,
-                "Join requests approved successfully.", result));
-    }
+        @GetMapping("/lesson/{lessonId}/join-requests")
+        public ResponseEntity<ApiResponse> getPendingJoinRequests(@PathVariable Long lessonId,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-    @PostMapping("/lesson/{lessonId}/join-requests/reject")
-    public ResponseEntity<ApiResponse> rejectJoinRequests(@PathVariable Long lessonId,
-                                                          @Valid @RequestBody JoinRequest request,
-                                                          Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                var list = teacherService.getPendingJoinRequests(teacher.getId(), lessonId);
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Pending join requests fetched successfully!", list));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        @PostMapping("/lesson/{lessonId}/join-requests/approve")
+        public ResponseEntity<ApiResponse> approveJoinRequests(@PathVariable Long lessonId,
+                        @Valid @RequestBody JoinRequest request,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-        var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
-        return ResponseEntity.ok(new ApiResponse(true,
-                "Join requests rejected successfully.", result));
-    }
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-    // ================== EXAMS (TEACHER) ==================
-
-    @PostMapping("/lesson/{lessonId}/exams")
-    public ResponseEntity<ApiResponse> createExam(@PathVariable Long lessonId,
-                                                  @Valid @RequestBody CreateExamRequest request,
-                                                  Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                var result = teacherService.approveJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Join requests approved successfully.", result));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        @PostMapping("/lesson/{lessonId}/join-requests/reject")
+        public ResponseEntity<ApiResponse> rejectJoinRequests(@PathVariable Long lessonId,
+                        @Valid @RequestBody JoinRequest request,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-        ExamSummaryDto exam = examService.createExam(teacher.getId(), lessonId, request);
-        return ResponseEntity.ok(new ApiResponse(true,
-                "Exam created successfully!", exam));
-    }
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-    @GetMapping("/lesson/{lessonId}/exams")
-    public ResponseEntity<ApiResponse> getExamsForLesson(@PathVariable Long lessonId,
-                                                         Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                var result = teacherService.rejectJoinRequests(teacher.getId(), lessonId, request.studentLessonIds());
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Join requests rejected successfully.", result));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        // ================== EXAMS (TEACHER) ==================
 
-        var exams = examService.getExamsForLessonAsTeacher(teacher.getId(), lessonId);
-        return ResponseEntity.ok(new ApiResponse(true,
-                "Exams fetched successfully!", exams));
-    }
+        @PostMapping("/lesson/{lessonId}/exams")
+        public ResponseEntity<ApiResponse> createExam(@PathVariable Long lessonId,
+                        @Valid @RequestBody CreateExamRequest request,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-    @PostMapping("/lesson")
-    public ResponseEntity<ApiResponse> createLesson(@Valid @RequestBody CreateLessonRequest request,
-                                                    Authentication authentication){
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                ExamSummaryDto exam = examService.createExam(teacher.getId(), lessonId, request);
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Exam created successfully!", exam));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        @GetMapping("/lesson/{lessonId}/exams")
+        public ResponseEntity<ApiResponse> getExamsForLesson(@PathVariable Long lessonId,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-        LessonSummaryDto data = lessonService.createLesson(teacher.getId(),request);
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-        return ResponseEntity.ok(new ApiResponse(true,"Lesson created successfully!",data));
-
-    }
-
-    @GetMapping("/lesson")
-    public ResponseEntity<ApiResponse> getLessons(Authentication authentication){
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                var exams = examService.getExamsForLessonAsTeacher(teacher.getId(), lessonId);
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Exams fetched successfully!", exams));
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        @PostMapping("/lesson")
+        public ResponseEntity<ApiResponse> createLesson(@Valid @RequestBody CreateLessonRequest request,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-        List<LessonSummaryDto> lessons = lessonService.getTeacherLessons(teacher.getId());
-        Map<String, Object> data = new HashMap<>();
-        data.put("number", lessons.size());
-        data.put("lessons", lessons);
-        return ResponseEntity.ok(new ApiResponse(true,"lessons returned successfully!", data));
-    }
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-    // TODO: Make this endpoint return the details of the lesson.
-    @GetMapping("/lesson/{lessonId}")
-    public ResponseEntity<ApiResponse> getLesson(@PathVariable Long lessonId,
-                                                 Authentication authentication){
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Missing or invalid token!");
+                LessonSummaryDto data = lessonService.createLesson(teacher.getId(), request);
+
+                return ResponseEntity.ok(new ApiResponse(true, "Lesson created successfully!", data));
+
         }
 
-        String email = authentication.getName();
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        @GetMapping("/lesson/my")
+        public ResponseEntity<ApiResponse> getLessons(Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
 
-        LessonDetailsDto lesson = lessonService.getLesson(lessonId, teacher.getId());
-        return ResponseEntity.ok(new ApiResponse(true,"lesson returned successfully!", lesson));
-    }
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
 
-    // TODO: create an endpoint that returns the join-requests of the teacher!
+                List<LessonSummaryDto> lessons = lessonService.getTeacherLessons(teacher.getId());
+                Map<String, Object> data = new HashMap<>();
+                data.put("number", lessons.size());
+                data.put("lessons", lessons);
+                return ResponseEntity.ok(new ApiResponse(true, "lessons returned successfully!", data));
+        }
+
+        @GetMapping("/lesson/{lessonId}")
+        public ResponseEntity<ApiResponse> getLesson(@PathVariable Long lessonId,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
+
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                LessonDetailsDto lesson = lessonService.getLesson(lessonId, teacher.getId());
+                return ResponseEntity.ok(new ApiResponse(true, "lesson returned successfully!", lesson));
+        }
+
+        @GetMapping("/join-requests")
+        public ResponseEntity<ApiResponse> getAllJoinRequests(Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
+
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                var list = teacherService.getAllPendingJoinRequests(teacher.getId());
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "All pending join requests fetched successfully!", list));
+        }
 }

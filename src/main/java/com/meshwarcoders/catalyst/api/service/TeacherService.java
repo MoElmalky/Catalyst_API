@@ -1,31 +1,18 @@
 package com.meshwarcoders.catalyst.api.service;
 
-import com.meshwarcoders.catalyst.api.dto.request.*;
-import com.meshwarcoders.catalyst.api.dto.response.AuthResponse;
 import com.meshwarcoders.catalyst.api.dto.response.JoinDto;
 import com.meshwarcoders.catalyst.api.dto.response.JoinStudentDto;
 import com.meshwarcoders.catalyst.api.dto.response.StudentSummaryDto;
-import com.meshwarcoders.catalyst.api.exception.BadRequestException;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
 import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
-import com.meshwarcoders.catalyst.api.model.common.NotificationType;
-import com.meshwarcoders.catalyst.api.model.common.UserType;
 import com.meshwarcoders.catalyst.api.repository.*;
 import com.meshwarcoders.catalyst.api.security.JwtUtils;
-import com.meshwarcoders.catalyst.util.EmailTemplates;
-import com.sendgrid.helpers.mail.objects.Content;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -49,6 +36,9 @@ public class TeacherService {
     @Autowired
     private StudentRepository studentRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional(readOnly = true)
     public List<JoinStudentDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
         LessonModel lesson = lessonRepository.findById(lessonId)
@@ -68,8 +58,7 @@ public class TeacherService {
                         new StudentSummaryDto(
                                 sl.getStudent().getId(),
                                 sl.getStudent().getFullName(),
-                                sl.getStudent().getEmail()
-                        ),
+                                sl.getStudent().getEmail()),
                         sl.getStatus()))
                 .toList();
     }
@@ -85,9 +74,9 @@ public class TeacherService {
     }
 
     private JoinDto updateJoinRequestsStatus(Long teacherId,
-                                             Long lessonId,
-                                             List<Long> studentLessonIds,
-                                             EnrollmentStatus targetStatus) {
+            Long lessonId,
+            List<Long> studentLessonIds,
+            EnrollmentStatus targetStatus) {
         LessonModel lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
@@ -115,8 +104,41 @@ public class TeacherService {
             sl.setStatus(targetStatus);
             studentLessonRepository.save(sl);
             affected.add(studentLessonId);
+
+            // Notify Student
+            String title = targetStatus == EnrollmentStatus.APPROVED ? "Join Request Approved"
+                    : "Join Request Rejected";
+            String body = targetStatus == EnrollmentStatus.APPROVED
+                    ? "Your request to join " + lesson.getSubject() + " has been approved!"
+                    : "Your request to join " + lesson.getSubject() + " has been rejected.";
+
+            notificationService.notifyStudent(
+                    sl.getStudent(),
+                    title,
+                    body,
+                    Map.of(
+                            "type", "JOIN_STATUS",
+                            "lessonId", lesson.getId().toString(),
+                            "status", targetStatus.name()));
         }
 
         return new JoinDto(lessonId, affected, skipped);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JoinStudentDto> getAllPendingJoinRequests(Long teacherId) {
+        List<StudentLessonModel> pending = studentLessonRepository
+                .findByLessonTeacherIdAndStatus(teacherId, EnrollmentStatus.PENDING);
+
+        return pending.stream()
+                .map(sl -> new JoinStudentDto(
+                        sl.getId(),
+                        sl.getLesson().getId(),
+                        new StudentSummaryDto(
+                                sl.getStudent().getId(),
+                                sl.getStudent().getFullName(),
+                                sl.getStudent().getEmail()),
+                        sl.getStatus()))
+                .toList();
     }
 }

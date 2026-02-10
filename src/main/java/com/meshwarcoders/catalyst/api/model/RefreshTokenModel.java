@@ -28,7 +28,7 @@ public class RefreshTokenModel {
 
     private Instant expiresAt;
 
-    private Boolean revoked;
+    private Boolean revoked = false;
 
     public AuthUser getUser() {
         return teacher != null ? (AuthUser) teacher : student;

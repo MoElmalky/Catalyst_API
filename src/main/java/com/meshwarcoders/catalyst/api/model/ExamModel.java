@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "exams")
-@Getter @Setter
+@Getter
+@Setter
 public class ExamModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +30,7 @@ public class ExamModel {
     private ExamType examType;
 
     private LocalDateTime examDateTime;
+    private LocalDateTime closingDate;
 
     private Integer durationMinutes;
 

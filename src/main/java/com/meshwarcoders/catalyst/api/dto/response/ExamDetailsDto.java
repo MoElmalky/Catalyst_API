@@ -1,9 +1,9 @@
 package com.meshwarcoders.catalyst.api.dto.response;
 
-import com.meshwarcoders.catalyst.api.model.ExamModel;
 import com.meshwarcoders.catalyst.api.model.common.ExamType;
+import java.util.List;
 
-public record ExamSummaryDto(
+public record ExamDetailsDto(
                 Long id,
                 Long lessonId,
                 String examName,
@@ -11,6 +11,6 @@ public record ExamSummaryDto(
                 String examDateTime,
                 String closingDate,
                 Integer durationMinutes,
-                ExamType examType) {
-
+                ExamType examType,
+                List<QuestionDto> questions) {
 }
