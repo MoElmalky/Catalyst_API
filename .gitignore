@@ -32,4 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
+### Secret ###
+
 src/main/resources/.env
+src/main/resources/catalyst-fcm.json

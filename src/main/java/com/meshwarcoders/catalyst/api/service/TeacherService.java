@@ -1,18 +1,19 @@
 package com.meshwarcoders.catalyst.api.service;
 
-import com.meshwarcoders.catalyst.api.dto.*;
-import com.meshwarcoders.catalyst.api.model.TeacherModel;
-import com.meshwarcoders.catalyst.api.repository.TeacherRepository;
+import com.meshwarcoders.catalyst.api.dto.response.JoinDto;
+import com.meshwarcoders.catalyst.api.dto.response.JoinStudentDto;
+import com.meshwarcoders.catalyst.api.dto.response.StudentSummaryDto;
+import com.meshwarcoders.catalyst.api.exception.NotFoundException;
+import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
+import com.meshwarcoders.catalyst.api.model.*;
+import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
+import com.meshwarcoders.catalyst.api.repository.*;
 import com.meshwarcoders.catalyst.api.security.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class TeacherService {
@@ -21,103 +22,123 @@ public class TeacherService {
     private TeacherRepository teacherRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private JwtUtils jwtUtils;
 
     @Autowired
     private EmailService emailService;
 
-    @Transactional
-    public AuthResponse signUp(SignUpRequest request) {
-        // Check if email already exists
-        if (teacherRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered!");
+    @Autowired
+    private LessonRepository lessonRepository;
+
+    @Autowired
+    private StudentLessonRepository studentLessonRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Transactional(readOnly = true)
+    public List<JoinStudentDto> getPendingJoinRequests(Long teacherId, Long lessonId) {
+        LessonModel lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new NotFoundException("Lesson not found!"));
+
+        if (!lesson.getTeacher().getId().equals(teacherId)) {
+            throw new UnauthorizedException("You do not own this lesson!");
         }
 
-        // Create new teacher
-        TeacherModel teacher = new TeacherModel();
-        teacher.setFullName(request.getFullName());
-        teacher.setEmail(request.getEmail());
-        teacher.setPassword(passwordEncoder.encode(request.getPassword()));
+        List<StudentLessonModel> pending = studentLessonRepository
+                .findByLessonAndStatus(lesson, EnrollmentStatus.PENDING);
 
-        teacher = teacherRepository.save(teacher);
-
-        // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
-
-        return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        // Find teacher by email
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email!"));
-
-        // Check password
-        if (!passwordEncoder.matches(request.getPassword(), teacher.getPassword())) {
-            throw new RuntimeException("Invalid password!");
-        }
-
-        // Generate JWT token
-        String token = jwtUtils.generateToken(teacher.getEmail());
-
-        return new AuthResponse(token, teacher.getId(), teacher.getFullName(), teacher.getEmail());
+        return pending.stream()
+                .map(sl -> new JoinStudentDto(
+                        sl.getId(),
+                        lesson.getId(),
+                        new StudentSummaryDto(
+                                sl.getStudent().getId(),
+                                sl.getStudent().getFullName(),
+                                sl.getStudent().getEmail()),
+                        sl.getStatus()))
+                .toList();
     }
 
     @Transactional
-    public void forgotPassword(ForgotPasswordRequest request) throws IOException {
-        // Find teacher by email
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("No account found with this email!"));
+    public JoinDto approveJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+        return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.APPROVED);
+    }
 
-        // Generate reset token
-        String resetCode = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+    @Transactional
+    public JoinDto rejectJoinRequests(Long teacherId, Long lessonId, List<Long> studentLessonIds) {
+        return updateJoinRequestsStatus(teacherId, lessonId, studentLessonIds, EnrollmentStatus.REJECTED);
+    }
 
-        teacher.setResetPasswordToken(resetCode);
-        teacher.setResetPasswordTokenExpiry(LocalDateTime.now().plusMinutes(5));
+    private JoinDto updateJoinRequestsStatus(Long teacherId,
+            Long lessonId,
+            List<Long> studentLessonIds,
+            EnrollmentStatus targetStatus) {
+        LessonModel lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new NotFoundException("Lesson not found!"));
 
-        emailService.sendEmail(teacher.getEmail(),resetCode);
+        if (!lesson.getTeacher().getId().equals(teacherId)) {
+            throw new UnauthorizedException("You do not own this lesson!");
+        }
 
-        teacherRepository.save(teacher);
+        List<Long> affected = new ArrayList<>();
+        List<Long> skipped = new ArrayList<>();
 
+        for (Long studentLessonId : studentLessonIds) {
 
+            Optional<StudentLessonModel> slOpt = studentLessonRepository.findById(studentLessonId);
+            if (slOpt.isEmpty()) {
+                skipped.add(studentLessonId);
+                continue;
+            }
+
+            StudentLessonModel sl = slOpt.get();
+            if (sl.getStatus() != EnrollmentStatus.PENDING) {
+                skipped.add(studentLessonId);
+                continue;
+            }
+
+            sl.setStatus(targetStatus);
+            studentLessonRepository.save(sl);
+            affected.add(studentLessonId);
+
+            // Notify Student
+            String title = targetStatus == EnrollmentStatus.APPROVED ? "Join Request Approved"
+                    : "Join Request Rejected";
+            String body = targetStatus == EnrollmentStatus.APPROVED
+                    ? "Your request to join " + lesson.getSubject() + " has been approved!"
+                    : "Your request to join " + lesson.getSubject() + " has been rejected.";
+
+            notificationService.notifyStudent(
+                    sl.getStudent(),
+                    title,
+                    body,
+                    Map.of(
+                            "type", "JOIN_STATUS",
+                            "lessonId", lesson.getId().toString(),
+                            "status", targetStatus.name()));
+        }
+
+        return new JoinDto(lessonId, affected, skipped);
     }
 
     @Transactional(readOnly = true)
-    public String verifyResetCode(VerifyResetCodeRequest request){
-        TeacherModel teacher = teacherRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("No account found with this email!"));
+    public List<JoinStudentDto> getAllPendingJoinRequests(Long teacherId) {
+        List<StudentLessonModel> pending = studentLessonRepository
+                .findByLessonTeacherIdAndStatus(teacherId, EnrollmentStatus.PENDING);
 
-        if(!teacher.getResetPasswordToken().equals(request.getCode())){
-            throw new RuntimeException("Invalid reset token!");
-        }
-
-        if(teacher.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())){
-            throw new RuntimeException("Reset token has expired!");
-        }
-
-        return jwtUtils.generateResetToken(request.getEmail());
-    }
-
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-
-        String email = jwtUtils.validateResetToken(request.getResetToken());
-
-        if (email == null) {
-            throw new RuntimeException("Invalid reset token!");
-        }
-
-        TeacherModel teacher = teacherRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No account found!"));
-
-        // Update password
-        teacher.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        teacher.setResetPasswordToken(null);
-        teacher.setResetPasswordTokenExpiry(null);
-
-        teacherRepository.save(teacher);
+        return pending.stream()
+                .map(sl -> new JoinStudentDto(
+                        sl.getId(),
+                        sl.getLesson().getId(),
+                        new StudentSummaryDto(
+                                sl.getStudent().getId(),
+                                sl.getStudent().getFullName(),
+                                sl.getStudent().getEmail()),
+                        sl.getStatus()))
+                .toList();
     }
 }
