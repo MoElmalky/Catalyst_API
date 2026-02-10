@@ -9,5 +9,9 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<StudentModel, Long> {
     Optional<StudentModel> findByEmail(String email);
+
+    Optional<StudentModel> findByResetPasswordToken(String token);
+
+    Optional<StudentModel> findByEmailConfirmToken(String token);
     boolean existsByEmail(String email);
 }

@@ -2,11 +2,16 @@ package com.meshwarcoders.catalyst.api.model;
 
 import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity(name = "student_lessons")
+@Getter @Setter
 public class StudentLessonModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long id;
 
     @ManyToOne(optional = false)
@@ -18,28 +23,4 @@ public class StudentLessonModel {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EnrollmentStatus status = EnrollmentStatus.PENDING;
-
-    public Long getId() {
-        return id;
-    }
-
-    public StudentModel getStudent() {
-        return student;
-    }
-
-    public EnrollmentStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(EnrollmentStatus status) {
-        this.status = status;
-    }
-
-    public void setLesson(LessonModel lesson) {
-        this.lesson = lesson;
-    }
-
-    public void setStudent(StudentModel student) {
-        this.student = student;
-    }
 }

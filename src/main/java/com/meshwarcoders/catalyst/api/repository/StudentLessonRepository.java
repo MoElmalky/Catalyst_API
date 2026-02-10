@@ -15,4 +15,8 @@ public interface StudentLessonRepository extends JpaRepository<StudentLessonMode
     Optional<StudentLessonModel> findByLessonAndStudent(LessonModel lesson, StudentModel student);
 
     List<StudentLessonModel> findByLessonAndStatus(LessonModel lesson, EnrollmentStatus status);
+
+    List<StudentLessonModel> findByStudentAndStatus(StudentModel student, EnrollmentStatus status);
+
+    List<StudentLessonModel> findByLessonTeacherIdAndStatus(Long teacherId, EnrollmentStatus status);
 }

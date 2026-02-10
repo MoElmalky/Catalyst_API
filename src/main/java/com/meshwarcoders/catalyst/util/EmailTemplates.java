@@ -1,122 +1,109 @@
 package com.meshwarcoders.catalyst.util;
 
 public class EmailTemplates {
-    public static String passwordResetEmail(String code) {
+    public static String emailTemplate(String url, String username, String message, String button, String duration) {
         return """
                 <!DOCTYPE html>
-                <html>
-                  <head>
+                <html lang="en">
+                <head>
                     <meta charset="UTF-8">
-                    <title>Password Reset Code</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Action Required: Catalyst</title>
                     <style>
-                      body {
-                        background-color: #f4f6f8;
-                        font-family: Arial, sans-serif;
-                        color: #333;
-                        padding: 20px;
-                      }
-                      .container {
-                        background-color: #eeeeee;
-                        border-radius: 8px;
-                        padding: 25px;
-                        max-width: 500px;
-                        margin: 0 auto;
-                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                      }
-                      h2 {
-                        color: #00ADB5;
-                      }
-                      .code {
-                        font-size: 24px;
-                        font-weight: bold;
-                        color: #00ADB5;
-                        margin: 20px 0;
-                      }
-                      .footer {
-                        margin-top: 30px;
-                        font-size: 13px;
-                        color: #777;
-                      }
+                        /* Reset & Base */
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                            background-color: #f5f5f5;
+                            color: #333333;
+                        }
+                        table {
+                            border-spacing: 0;
+                            border-collapse: collapse;
+                            width: 100%%;
+                        }
+                        img {
+                            border: 0;
+                        }
+                        /* Variables */
+                        .bg-navy { background-color: #192A56; }
+                        .bg-pink { background-color: #FC5185; }
+                        .text-navy { color: #393E46; }
+                        .text-white { color: #eeeeee; }
+                        /* Layout */
+                        .container {
+                            max-width: 600px;
+                            margin: 0 auto;
+                            background-color: #eeeeee;
+                            border-radius: 8px;
+                            overflow: hidden;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        }
+                        .content {
+                            padding: 40px 30px;
+                            text-align: center;
+                        }
+                        .button-container {
+                            margin: 30px 0;
+                        }
+                        .btn {
+                            display: inline-block;
+                            background-color: #192A56;
+                            color: #ffffff;
+                            text-decoration: none;
+                            padding: 14px 28px;
+                            border-radius: 50px;
+                            font-weight: bold;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        }
+                        .footer {
+                            background-color: #f5f5f5;
+                            padding: 20px;
+                            text-align: center;
+                            font-size: 12px;
+                            color: #999999;
+                        }
                     </style>
-                  </head>
-                  <body>
-                    <div class="container">
-                      <h2>Password Reset Request</h2>
-                      <p>Hello,</p>
-                      <p>We received a request to reset your password. Please use the verification code below to proceed:</p>
-                                
-                      <p class="code">%s</p>
-                                
-                      <p>This code will expire in <strong>5 minutes</strong>.</p>
-                      <p>If you didn’t request a password reset, please ignore this email.</p>
-                                
-                      <div class="footer">
-                        <p>Best regards,<br>Catalyst Team</p>
-                      </div>
+                </head>
+                <body>
+                    <div style="padding: 20px;">
+                        <div class="container">
+                            <!-- Decor Header -->
+                            <table role="presentation">
+                                <tr><td class="bg-navy" style="height: 12px;"></td></tr>
+                                <tr><td class="bg-pink" style="height: 8px;"></td></tr>
+                            </table>
+                            <!-- Main Content -->
+                            <div class="content">
+                                <h1 class="text-navy" style="margin-bottom: 20px;">Hello %s!</h1>
+                                <p style="font-size: 16px; line-height: 1.5; color: #555;">
+                                    %s
+                                </p>
+                                <p style="font-size: 16px; line-height: 1.5; color: #555;">This link is valid for %s.
+                                </p>
+                                <div class="button-container">
+                                    <a href="%s" class="btn" style="color:#ffffff; text-decoration:none;">
+                                        %s
+                                    </a>
+                                </div>
+                                <p style="font-size: 14px; color: #888; margin-top: 30px;">
+                                    If you didn't request this, you can safely ignore this email.
+                                </p>
+                            </div>
+                            <!-- Decor Footer -->
+                            <table role="presentation">
+                                <tr><td class="bg-navy" style="height: 12px;"></td></tr>
+                            </table>
+                            <!-- Footer Info -->
+                            <div class="footer">
+                                © 2026 Catalyst. All rights reserved.
+                            </div>
+                        </div>
                     </div>
-                  </body>
+                </body>
                 </html>
-                """.formatted(code);
-    }
-
-    public static String emailConfirmationEmail(String confirmationLink) {
-        return """
-                <!DOCTYPE html>
-                <html>
-                  <head>
-                    <meta charset=\"UTF-8\">
-                    <title>Email Confirmation</title>
-                    <style>
-                      body {
-                        background-color: #f4f6f8;
-                        font-family: Arial, sans-serif;
-                        color: #333;
-                        padding: 20px;
-                      }
-                      .container {
-                        background-color: #eeeeee;
-                        border-radius: 8px;
-                        padding: 25px;
-                        max-width: 500px;
-                        margin: 0 auto;
-                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                      }
-                      h2 {
-                        color: #00ADB5;
-                      }
-                      .btn {
-                        display: inline-block;
-                        padding: 10px 20px;
-                        background-color: #00ADB5;
-                        color: #ffffff !important;
-                        text-decoration: none;
-                        border-radius: 4px;
-                        margin: 20px 0;
-                      }
-                      .footer {
-                        margin-top: 30px;
-                        font-size: 13px;
-                        color: #777;
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    <div class=\"container\">
-                      <h2>Welcome to Catalyst!</h2>
-                      <p>Hello,</p>
-                      <p>Thank you for signing up. Please confirm your email address by clicking the button below:</p>
-
-                      <p><a class=\"btn\" href=\"%s\">Confirm Email</a></p>
-
-                      <p>This link will expire in <strong>24 hours</strong>.</p>
-                      <p>If you didnt create an account, you can safely ignore this email.</p>
-
-                      <div class=\"footer\">
-                        <p>Best regards,<br>Catalyst Team</p>
-                      </div>
-                    </div>
-                  </body>
-                </html>
-                """.formatted(confirmationLink);
+                """.formatted(username, message, duration,  url, button);
     }
 }
