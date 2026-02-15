@@ -27,4 +27,6 @@ public class StudentAnswerModel {
 
     @Column(columnDefinition = "TEXT")
     private String textAnswer;
+
+    private Double mark;
 }
