@@ -7,7 +7,8 @@ import java.util.List;
 public record ExamQuestionRequest(String text,
                                   QuestionType type,
                                   List<String> options,
-                                  Integer correctOptionIndex,
-                                  Integer maxPoints) {
+                                  List <Integer> correctOptionIndex,
+                                  Integer maxPoints,
+                                  String answer) {
 
 }

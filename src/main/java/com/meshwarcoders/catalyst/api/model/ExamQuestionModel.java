@@ -31,8 +31,10 @@ public class ExamQuestionModel {
     // For MCQ questions
     @ElementCollection
     private List<String> options = new ArrayList<>();
-
-    private Integer correctOptionIndex;
+    @ElementCollection
+    private List<Integer> correctOptionIndex = new ArrayList<>();
 
     private Integer maxPoints;
+
+    private String answer;
 }

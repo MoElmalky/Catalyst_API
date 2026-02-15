@@ -88,6 +88,7 @@ public class ExamService {
                 qm.setOptions(q.options());
                 qm.setCorrectOptionIndex(q.correctOptionIndex());
                 qm.setMaxPoints(q.maxPoints() == null ? defaultPoints : q.maxPoints());
+                qm.setAnswer(q.answer());
                 examQuestionRepository.save(qm);
             }
         }
