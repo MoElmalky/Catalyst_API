@@ -7,5 +7,5 @@ import java.util.List;
 
 public record CreateExamRequest(@NotBlank(message = "examName is required") String examName, Integer maxGrade,
         String examDateTime, String closingDate, Integer durationMinutes, Integer defaultPoints,
-        List<ExamQuestionRequest> questions, ExamType examType) {
+        List<ExamQuestionRequest> questions, ExamType examType ) {
 }
