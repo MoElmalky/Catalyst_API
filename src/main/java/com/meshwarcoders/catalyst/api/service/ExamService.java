@@ -1,6 +1,6 @@
 package com.meshwarcoders.catalyst.api.service;
 
-import java.util.Map;
+import java.util.*;
 
 import com.meshwarcoders.catalyst.api.dto.request.AnswerRequest;
 import com.meshwarcoders.catalyst.api.dto.request.CreateExamRequest;
@@ -13,12 +13,16 @@ import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
 import com.meshwarcoders.catalyst.api.model.common.EnrollmentStatus;
 import com.meshwarcoders.catalyst.api.repository.*;
+import com.meshwarcoders.catalyst.util.UtilFunctions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +54,12 @@ public class ExamService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private SimilarityService similarityService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ExamSummaryDto createExam(Long teacherId, Long lessonId, CreateExamRequest request) {
@@ -252,6 +262,39 @@ public class ExamService {
                     return answer;
                 })
                 .toList();
+
+        studentAnswerRepository.saveAll(answers);
+        eventPublisher.publishEvent(answers);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void gradeAnswers(List<StudentAnswerModel> answers){
+        List<StudentAnswerModel> writingAnswers = new ArrayList<>();
+
+        List<Map<String, String>> pairs = new ArrayList<>();
+        answers.forEach(ans->{
+            ExamQuestionModel question = ans.getQuestion();
+            switch (question.getType()){
+                case MCQ:
+                {
+                    Double mark = (double) (UtilFunctions.countCommonUnique(ans.getSelectedOptions(), question.getCorrectOptionIndex())/ans.getSelectedOptions().size());
+                    ans.setMark(mark);
+                }
+                case WRITING:
+                {
+                    writingAnswers.add(ans);
+                    Map<String, String> pair = new HashMap<>();
+                    pair.put("studentAnswer", ans.getTextAnswer());
+                    pair.put("teacherAnswer", question.getAnswer());
+                    pairs.add(pair);
+                }
+            }
+        });
+        List<Double> writingMarks = similarityService.calculate(pairs);
+        for(int i =0; i< writingAnswers.size(); i++){
+            writingAnswers.get(i).setMark(writingMarks.get(i));
+        }
 
         studentAnswerRepository.saveAll(answers);
     }
