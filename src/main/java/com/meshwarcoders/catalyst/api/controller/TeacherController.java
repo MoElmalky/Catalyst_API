@@ -227,7 +227,7 @@ public class TeacherController {
 
         @GetMapping("/exam/{examId}")
         public ResponseEntity<ApiResponse> getExamWithExamID(@PathVariable Long examId,
-                                                             Authentication authentication) {
+                        Authentication authentication) {
                 if (authentication == null || !authentication.isAuthenticated()) {
                         throw new UnauthorizedException("Missing or invalid token!");
                 }
@@ -235,6 +235,39 @@ public class TeacherController {
                 String email = authentication.getName();
                 var exam = examService.getExamByIdAsTeacher(examId, email);
                 return ResponseEntity.ok(new ApiResponse(true,
-                        "Exam details fetched successfully!", exam));
+                                "Exam details fetched successfully!", exam));
+        }
+
+        @GetMapping("/exam/answers/{studentExamId}")
+        public ResponseEntity<ApiResponse> getStudentExamAnswers(@PathVariable Long studentExamId,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
+
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                var answers = examService.getStudentExamAnswers(teacher.getId(), studentExamId);
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Student exam answers fetched successfully!", answers));
+        }
+
+        @PostMapping("/exam/verify/{studentExamId}")
+        public ResponseEntity<ApiResponse> verifyStudentExam(@PathVariable Long studentExamId,
+                        @Valid @RequestBody List<AnswerMarkDto> answers,
+                        Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
+
+                String email = authentication.getName();
+                TeacherModel teacher = teacherRepository.findByEmail(email)
+                                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+
+                var result = examService.verifyStudentExam(teacher.getId(), studentExamId, answers);
+                return ResponseEntity.ok(new ApiResponse(true,
+                                "Student exam verified successfully!", result));
         }
 }
