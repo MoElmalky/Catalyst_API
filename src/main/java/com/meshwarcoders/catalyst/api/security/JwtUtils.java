@@ -24,7 +24,7 @@ public class JwtUtils {
 
     private static final int MINUTE_IN_MS = 60000;
 
-    private static final long ACCESS_TOKEN_EXPIRATION = 15L * MINUTE_IN_MS;
+    private static final long ACCESS_TOKEN_EXPIRATION = 120L * MINUTE_IN_MS;
 
     private static final long CONFIRMATION_TOKEN_EXPIRATION = 2L * 60 * MINUTE_IN_MS;
 

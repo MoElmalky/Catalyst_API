@@ -12,5 +12,7 @@ public record ExamDetailsDto(
                 String closingDate,
                 Integer durationMinutes,
                 ExamType examType,
-                List<QuestionDto> questions) {
+                List<QuestionDto> questions,
+                List<StudentExamDto> studentGrads
+                ) {
 }

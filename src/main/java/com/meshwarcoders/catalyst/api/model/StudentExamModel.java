@@ -20,4 +20,6 @@ public class StudentExamModel {
     private StudentModel student;
 
     private Integer grade;
+
+    private Boolean verified = false;
 }

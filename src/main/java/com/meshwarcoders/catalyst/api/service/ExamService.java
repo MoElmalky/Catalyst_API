@@ -8,6 +8,7 @@ import com.meshwarcoders.catalyst.api.dto.request.ExamQuestionRequest;
 import com.meshwarcoders.catalyst.api.dto.response.ExamDetailsDto;
 import com.meshwarcoders.catalyst.api.dto.response.ExamSummaryDto;
 import com.meshwarcoders.catalyst.api.dto.response.QuestionDto;
+import com.meshwarcoders.catalyst.api.dto.response.StudentExamDto;
 import com.meshwarcoders.catalyst.api.exception.NotFoundException;
 import com.meshwarcoders.catalyst.api.exception.UnauthorizedException;
 import com.meshwarcoders.catalyst.api.model.*;
@@ -157,25 +158,20 @@ public class ExamService {
     }
 
     @Transactional(readOnly = true)
-    public ExamDetailsDto getExamById(Long examId, String email, boolean isTeacher) {
+    public ExamDetailsDto getExamByIdAsTeacher(Long examId, String email) {
         ExamModel exam = examRepository.findById(examId)
                 .orElseThrow(() -> new NotFoundException("Exam not found!"));
-
-        if (isTeacher) {
-            TeacherModel teacher = teacherRepository.findByEmail(email)
-                    .orElseThrow(() -> new NotFoundException("Teacher not found!"));
-            if (!exam.getLesson().getTeacher().getId().equals(teacher.getId())) {
-                throw new UnauthorizedException("You do not own this lesson!");
-            }
-        } else {
-            StudentModel student = studentRepository.findByEmail(email)
-                    .orElseThrow(() -> new NotFoundException("Student not found!"));
-            StudentLessonModel sl = studentLessonRepository.findByLessonAndStudent(exam.getLesson(), student)
-                    .orElseThrow(() -> new UnauthorizedException("You are not enrolled in this lesson!"));
-            if (sl.getStatus() != EnrollmentStatus.APPROVED) {
-                throw new UnauthorizedException("You are not approved in this lesson!");
-            }
+        TeacherModel teacher = teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Teacher not found!"));
+        if (!exam.getLesson().getTeacher().getId().equals(teacher.getId())) {
+            throw new UnauthorizedException("You do not own this lesson!");
         }
+
+        List<StudentExamModel> studentExams = studentExamRepository.findByExam(exam);
+
+        List<StudentExamDto> studentGrads = studentExams.stream().map(e -> new StudentExamDto(
+                e.getId(), e.getStudent().getFullName(), e.getGrade(), e.getVerified()
+        )).toList();
 
         List<QuestionDto> questions = exam.getQuestions().stream()
                 .map(q -> new QuestionDto(
@@ -195,7 +191,46 @@ public class ExamService {
                 exam.getClosingDate() != null ? exam.getClosingDate().toString() : null,
                 exam.getDurationMinutes(),
                 exam.getExamType(),
-                questions);
+                questions,
+                studentGrads
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ExamDetailsDto getExamByIdAsStudent(Long examId, String email) {
+        ExamModel exam = examRepository.findById(examId)
+                .orElseThrow(() -> new NotFoundException("Exam not found!"));
+
+        StudentModel student = studentRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Student not found!"));
+        StudentLessonModel sl = studentLessonRepository.findByLessonAndStudent(exam.getLesson(), student)
+                .orElseThrow(() -> new UnauthorizedException("You are not enrolled in this lesson!"));
+        if (sl.getStatus() != EnrollmentStatus.APPROVED) {
+            throw new UnauthorizedException("You are not approved in this lesson!");
+        }
+
+
+        List<QuestionDto> questions = exam.getQuestions().stream()
+                .map(q -> new QuestionDto(
+                        q.getId(),
+                        q.getText(),
+                        q.getType(),
+                        q.getOptions(),
+                        q.getMaxPoints()))
+                .toList();
+
+        return new ExamDetailsDto(
+                exam.getId(),
+                exam.getLesson().getId(),
+                exam.getExamName(),
+                exam.getMaxGrade(),
+                exam.getExamDateTime() != null ? exam.getExamDateTime().toString() : null,
+                exam.getClosingDate() != null ? exam.getClosingDate().toString() : null,
+                exam.getDurationMinutes(),
+                exam.getExamType(),
+                questions,
+                null
+        );
     }
 
     private ExamSummaryDto toSummaryDto(ExamModel exam) {
@@ -269,33 +304,47 @@ public class ExamService {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void gradeAnswers(List<StudentAnswerModel> answers){
+    public void gradeAnswers(List<StudentAnswerModel> answers) {
+        System.out.println("Grading......");
         List<StudentAnswerModel> writingAnswers = new ArrayList<>();
-
+        List<Double> mcqMarks = new ArrayList<>();
+        Double totalGrade = 0.0;
         List<Map<String, String>> pairs = new ArrayList<>();
-        answers.forEach(ans->{
+        List<Integer> writingMaxPoints = new ArrayList<>();
+        answers.forEach(ans -> {
             ExamQuestionModel question = ans.getQuestion();
-            switch (question.getType()){
-                case MCQ:
-                {
-                    Double mark = (double) (UtilFunctions.countCommonUnique(ans.getSelectedOptions(), question.getCorrectOptionIndex())/ans.getSelectedOptions().size());
+            Integer maxPoints = question.getMaxPoints();
+            switch (question.getType()) {
+                case MCQ: {
+                    Double mark = (double) (UtilFunctions.countCommonUnique(ans.getSelectedOptions(), question.getCorrectOptionIndex()) / ans.getSelectedOptions().size()) * maxPoints;
                     ans.setMark(mark);
+                    mcqMarks.add(mark);
                 }
-                case WRITING:
-                {
+                case WRITING: {
                     writingAnswers.add(ans);
                     Map<String, String> pair = new HashMap<>();
                     pair.put("studentAnswer", ans.getTextAnswer());
                     pair.put("teacherAnswer", question.getAnswer());
+                    writingMaxPoints.add(question.getMaxPoints());
                     pairs.add(pair);
                 }
             }
         });
         List<Double> writingMarks = similarityService.calculate(pairs);
-        for(int i =0; i< writingAnswers.size(); i++){
-            writingAnswers.get(i).setMark(writingMarks.get(i));
+        for (int i = 0; i < writingAnswers.size(); i++) {
+            double mark = writingMarks.get(i) * writingMaxPoints.get(i);
+            writingAnswers.get(i).setMark(mark);
+            totalGrade += mark;
+        }
+        for (Double mcqMark : mcqMarks) {
+            totalGrade += mcqMark;
         }
 
+        StudentExamModel studentExam = answers.get(0).getStudentExam();
+        studentExam.setGrade(totalGrade.intValue());
         studentAnswerRepository.saveAll(answers);
+        studentExamRepository.save(studentExam);
     }
+
+
 }

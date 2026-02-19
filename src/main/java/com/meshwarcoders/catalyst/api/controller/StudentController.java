@@ -101,7 +101,7 @@ public class StudentController {
         }
 
         String email = authentication.getName();
-        var exam = examService.getExamById(examId, email, false);
+        var exam = examService.getExamByIdAsStudent(examId, email);
         return ResponseEntity.ok(new ApiResponse(true,
                 "Exam details fetched successfully!", exam));
     }

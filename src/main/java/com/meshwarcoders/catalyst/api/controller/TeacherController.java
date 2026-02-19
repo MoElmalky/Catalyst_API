@@ -224,4 +224,17 @@ public class TeacherController {
                 return ResponseEntity.ok(new ApiResponse(true,
                                 "All pending join requests fetched successfully!", list));
         }
+
+        @GetMapping("/exam/{examId}")
+        public ResponseEntity<ApiResponse> getExamWithExamID(@PathVariable Long examId,
+                                                             Authentication authentication) {
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        throw new UnauthorizedException("Missing or invalid token!");
+                }
+
+                String email = authentication.getName();
+                var exam = examService.getExamByIdAsTeacher(examId, email);
+                return ResponseEntity.ok(new ApiResponse(true,
+                        "Exam details fetched successfully!", exam));
+        }
 }

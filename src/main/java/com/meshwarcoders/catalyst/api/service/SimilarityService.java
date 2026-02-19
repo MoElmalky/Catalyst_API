@@ -18,7 +18,7 @@ public class SimilarityService {
     }
 
     public List<Double> calculate(List<Map<String, String>> pairs) {
-        String flaskUrl = "http://127.0.0.1:5000/similarity";
+        String flaskUrl = "https://exclamational-unlyrical-brittani.ngrok-free.dev/similarity";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
